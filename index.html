@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>OpenRhythm</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         MENU
+    ========================== -->
+
+    <div id="menu">
+
+        <h1>🎵 OpenRhythm</h1>
+
+        <input
+            type="file"
+            id="musicFile"
+            accept=".mp3,audio/mpeg">
+<input
+    type="file"
+    id="chartFile"
+    accept=".json">
+
+        <button id="playButton">
+            Jouer
+        </button>
+
+<button id="recordButton">
+    Enregistrer une partition
+</button>
+
+    </div>
+
+
+    <!-- =========================
+         HUD
+    ========================== -->
+
+    <div id="hud">
+
+        <div id="score">Score : 0</div>
+
+        <div id="combo">Combo : 0</div>
+
+       <div id="bestCombo">Meilleur combo : 0</div>
+
+        <div id="accuracy">100 %</div>
+
+    </div>
+
+
+    <!-- =========================
+         JEU
+    ========================== -->
+
+    <div id="game">
+
+        <div id="playfield">
+
+            <div class="lane" data-lane="0"></div>
+            <div class="lane" data-lane="1"></div>
+            <div class="lane" data-lane="2"></div>
+            <div class="lane" data-lane="3"></div>
+
+            <div id="hitLine"></div>
+            <div id="hitEffect"></div>
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         BARRE MUSIQUE
+    ========================== -->
+
+    <div id="progressContainer">
+
+        <div id="progressBar"></div>
+
+    </div>
+
+
+    <!-- =========================
+         FIN
+    ========================== -->
+
+    <div id="endScreen" class="hidden">
+
+        <h2>Fin de la partie</h2>
+
+        <p id="finalScore"></p>
+
+        <button id="restartButton">
+            Rejouer
+        </button>
+
+    </div>
+
+
+    <!-- =========================
+         JS
+    ========================== -->
+
+    <script src="js/audio.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/note.js"></script>
+    <script src="js/score.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/game.js"></script>
+
+</body>
+
+</html>
