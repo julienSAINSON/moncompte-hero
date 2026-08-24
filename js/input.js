@@ -104,12 +104,6 @@ class InputManager {
 
     setupTouchInput() {
 
-        // Remplace les étiquettes clavier par des indicateurs tactiles
-        const labels = ["◀", "◁", "▷", "▶"];
-        document.querySelectorAll(".keyHint").forEach((el, i) => {
-            el.textContent = labels[i];
-        });
-
         // Les Pointer Events couvrent le tactile, le stylet et la souris.
         document.querySelectorAll(".lane").forEach((laneEl) => {
 
