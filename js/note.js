@@ -23,12 +23,9 @@ class Note {
         return;
     }
 
-    const HIT_LINE_Y = 600;
-    const PIXELS_PER_SECOND = 300;
-
     const y =
-        HIT_LINE_Y -
-        ((this.hitTime - currentTime) * PIXELS_PER_SECOND);
+        renderer.hitLineY -
+        ((this.hitTime - currentTime) * renderer.pixelsPerSecond);
 
     this.element.style.top = y + "px";
 

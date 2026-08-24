@@ -217,7 +217,8 @@ body {
     position: relative;
 
     width: 420px;
-    height: 700px;
+    /* Hauteur max pour tenir dans le viewport (menu ~90px + hud ~60px + progress ~50px) */
+    height: min(700px, calc(100vh - 200px));
 
     background: #222;
 
@@ -278,12 +279,13 @@ body {
 #keyGuide {
     position: absolute;
     left: 0;
-    bottom: 46px;
+    bottom: 10px;
     width: 100%;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 0;
     pointer-events: none;
+    z-index: 10;
 }
 
 .keyHint {
@@ -421,4 +423,116 @@ body {
     font-size: 20px;
 
     cursor: pointer;
+}
+
+/* ==========================
+   TOUCH DEVICE
+========================== */
+
+/* Lanes cliquables/tapables sur mobile */
+body.touch-device .lane {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.08s ease;
+}
+
+body.touch-device .lane:active,
+body.touch-device .lane.touch-active {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* Indicateurs tactiles en bas des lanes */
+body.touch-device .keyHint {
+    font-size: 22px;
+    padding: 10px 0;
+    border-radius: 10px;
+    opacity: 0.85;
+    transition: opacity 0.08s ease, transform 0.08s ease;
+}
+
+body.touch-device .keyHint:active {
+    opacity: 1;
+    transform: scale(0.92);
+}
+
+/* Zone de tap agrandie sur mobile */
+body.touch-device #keyGuide {
+    bottom: 20px;
+    pointer-events: none; /* le tap est capté par les lanes */
+}
+
+/* Sur desktop, on garde le comportement original */
+body.desktop-device .lane {
+    pointer-events: none;
+}
+
+/* ==========================
+   MENU COMPACT — touch device
+========================== */
+
+body.touch-device #menu {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+body.touch-device #menu h1 {
+    font-size: 18px;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+body.touch-device #modeSelector {
+    margin-bottom: 0;
+    gap: 6px;
+}
+
+body.touch-device .modeButton {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+/* On masque les éléments non essentiels pendant le jeu */
+body.touch-device #modeInfo {
+    display: none;
+}
+
+body.touch-device #editionControls {
+    display: none !important;
+}
+
+body.touch-device #playButton {
+    padding: 6px 16px;
+    font-size: 14px;
+}
+
+/* ==========================
+   RESPONSIVE MOBILE
+========================== */
+
+@media (max-width: 480px) {
+
+    #hud {
+        width: 100%;
+        padding: 0 8px;
+        font-size: 15px;
+    }
+
+    #playfield {
+        width: 100vw;
+        height: calc(100vh - 160px);
+    }
+
+    #progressContainer {
+        width: 100%;
+        margin: 8px 0;
+    }
+
+    body.touch-device .keyHint {
+        font-size: 26px;
+        padding: 14px 0;
+    }
+
 }
