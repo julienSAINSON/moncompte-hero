@@ -4,8 +4,30 @@ class AudioManager {
 
         this.audio = null;
         this.file = null;
+        this.objectUrl = null;
 
         this.started = false;
+    }
+
+    attachEndedListener() {
+
+        this.audio.addEventListener("ended", () => {
+
+            if (window.game) {
+                window.game.onSongFinished();
+            }
+
+        });
+
+    }
+
+    releaseObjectURL() {
+
+        if (this.objectUrl) {
+            URL.revokeObjectURL(this.objectUrl);
+            this.objectUrl = null;
+        }
+
     }
 
     load(file) {
@@ -16,14 +38,63 @@ class AudioManager {
             this.audio.pause();
         }
 
-        this.audio = new Audio(URL.createObjectURL(file));
+        this.releaseObjectURL();
+
+        this.objectUrl = URL.createObjectURL(file);
+
+        this.audio = new Audio(this.objectUrl);
 
         this.audio.preload = "auto";
 
-        this.audio.addEventListener("ended", () => {
+        this.attachEndedListener();
 
-            if (window.game) {
-                window.game.onSongFinished();
+    }
+
+    async loadFromURL(url) {
+
+        this.file = null;
+
+        if (this.audio) {
+            this.audio.pause();
+        }
+
+        this.releaseObjectURL();
+
+        this.audio = new Audio(url);
+
+        this.audio.preload = "auto";
+
+        this.attachEndedListener();
+
+        try {
+            await this.audio.load();
+        } catch (_) {
+            // no-op: load() can be sync depending on browser
+        }
+
+        return new Promise((resolve) => {
+
+            const onCanPlay = () => {
+                cleanup();
+                resolve(true);
+            };
+
+            const onError = () => {
+                cleanup();
+                resolve(false);
+            };
+
+            const cleanup = () => {
+                this.audio.removeEventListener("canplaythrough", onCanPlay);
+                this.audio.removeEventListener("error", onError);
+            };
+
+            this.audio.addEventListener("canplaythrough", onCanPlay);
+            this.audio.addEventListener("error", onError);
+
+            if (this.audio.readyState >= 3) {
+                cleanup();
+                resolve(true);
             }
 
         });

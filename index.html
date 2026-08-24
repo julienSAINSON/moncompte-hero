@@ -20,22 +20,32 @@
 
         <h1>🎵 OpenRhythm</h1>
 
-        <input
-            type="file"
-            id="musicFile"
-            accept=".mp3,audio/mpeg">
-<input
-    type="file"
-    id="chartFile"
-    accept=".json">
+        <div id="modeSelector">
+            <button id="modePlayButton" class="modeButton active">
+                Mode Play
+            </button>
+            <button id="modeEditionButton" class="modeButton developerHidden">
+                Mode Edition
+            </button>
+        </div>
+
+        <p id="modeInfo">
+            Mode Play : chargement automatique des fichiers par defaut.
+        </p>
+
+        <div id="editionControls" class="hidden">
+            <input
+                type="file"
+                id="musicFile"
+                accept=".mp3,audio/mpeg">
+            <button id="recordButton">
+                Demarrer l'edition
+            </button>
+        </div>
 
         <button id="playButton">
-            Jouer
+            Start
         </button>
-
-<button id="recordButton">
-    Enregistrer une partition
-</button>
 
     </div>
 
@@ -72,6 +82,13 @@
 
             <div id="hitLine"></div>
             <div id="hitEffect"></div>
+
+            <div id="keyGuide" aria-label="Touches de jeu">
+                <span class="keyHint lane0">A</span>
+                <span class="keyHint lane1">S</span>
+                <span class="keyHint lane2">D</span>
+                <span class="keyHint lane3">F</span>
+            </div>
         </div>
 
     </div>
@@ -115,6 +132,7 @@
     <script src="js/score.js"></script>
     <script src="js/input.js"></script>
     <script src="js/renderer.js"></script>
+    <script src="assets/default/partition.js"></script>
     <script src="js/game.js"></script>
 
 </body>

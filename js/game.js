@@ -2,6 +2,9 @@
 // game.js - Partie 1
 //====================================================
 
+const DEFAULT_PLAY_MP3 = "assets/default/saisis ton sciforma.mp3";
+const DEFAULT_PLAY_CHART = "assets/default/partition.json";
+
 class Game {
 
     constructor() {
@@ -16,6 +19,18 @@ class Game {
 
         this.playButton =
             document.getElementById("playButton");
+
+        this.modePlayButton =
+            document.getElementById("modePlayButton");
+
+        this.modeEditionButton =
+            document.getElementById("modeEditionButton");
+
+        this.modeInfo =
+            document.getElementById("modeInfo");
+
+        this.editionControls =
+            document.getElementById("editionControls");
 
         this.fileInput =
             document.getElementById("musicFile");
@@ -32,20 +47,64 @@ class Game {
             "click",
             () => this.restart()
         );
-this.chartInput =
-    document.getElementById("chartFile");
 
-this.recordButton =
-    document.getElementById("recordButton");
+        this.recordButton =
+            document.getElementById("recordButton");
 
-this.recordButton.addEventListener(
-    "click",
-    () => this.startRecording()
-);
+        this.recordButton.addEventListener(
+            "click",
+            () => this.startRecording()
+        );
 
+        this.modePlayButton.addEventListener(
+            "click",
+            () => this.setAppMode("play")
+        );
 
-this.mode = "play"; // play | record
-this.recordedNotes = [];
+        this.modeEditionButton.addEventListener(
+            "click",
+            () => this.setAppMode("edition")
+        );
+
+        this.mode = "play"; // play | record
+        this.appMode = "play"; // play | edition
+        this.recordedNotes = [];
+
+        this.setAppMode("play");
+
+    }
+
+    setAppMode(mode) {
+
+        this.appMode = mode;
+
+        const isPlayMode = mode === "play";
+
+        this.modePlayButton.classList.toggle(
+            "active",
+            isPlayMode
+        );
+
+        this.modeEditionButton.classList.toggle(
+            "active",
+            !isPlayMode
+        );
+
+        this.editionControls.classList.toggle(
+            "hidden",
+            isPlayMode
+        );
+
+        this.playButton.classList.toggle(
+            "hidden",
+            !isPlayMode
+        );
+
+        this.modeInfo.textContent = isPlayMode
+            ? "Mode Play : chargement automatique des fichiers par defaut."
+            : "Mode Edition : choisis un MP3 puis appuie sur Demarrer l'edition pour generer le JSON.";
+
+        this.restart();
 
     }
 
@@ -53,45 +112,58 @@ this.recordedNotes = [];
     // Démarrage
     //--------------------------------------------------
 
-    start() {
+    async start() {
 
-        const file =
-            this.fileInput.files[0];
-
-        if (!file) {
-
-            alert("Choisissez un MP3.");
-
+        if (this.running) {
             return;
-
         }
 
-        renderer.hideEndScreen();
+        this.mode = "play";
 
-        renderer.clearNotes(this.notes);
+        this.resetRunState();
 
-        this.notes = [];
+        const chartLoaded =
+            this.loadDefaultChartData() ||
+            await this.prepareChartFromURL(
+                encodeURI(DEFAULT_PLAY_CHART)
+            );
 
-        scoreManager.reset();
+        if (!chartLoaded) {
+            alert(
+                "Impossible de charger la partition par defaut: " +
+                DEFAULT_PLAY_CHART
+            );
+            return;
+        }
 
-        audioManager.load(file);
+        const audioLoaded =
+            await audioManager.loadFromURL(
+                encodeURI(DEFAULT_PLAY_MP3)
+            );
 
-     this.prepareChart(() => {
+        if (!audioLoaded) {
+            alert(
+                "Impossible de charger le MP3 par defaut: " +
+                DEFAULT_PLAY_MP3
+            );
+            return;
+        }
 
-    audioManager.play();
+        audioManager.play();
 
-    this.running = true;
+        this.running = true;
 
-    this.loop();
-
-});
+        this.loop();
 
     }
 
 
 
+    startRecording() {
 
-startRecording() {
+        if (this.running) {
+            return;
+        }
 
     const file = this.fileInput.files[0];
 
@@ -104,6 +176,8 @@ startRecording() {
     }
 
     this.mode = "record";
+
+    this.resetRunState();
 
     this.recordedNotes = [];
 
@@ -121,26 +195,48 @@ startRecording() {
     // Génération des notes
     //--------------------------------------------------
 
-prepareChart(callback) {
+    loadDefaultChartData() {
 
-    const file =
-        this.chartInput.files[0];
+        if (!window.DEFAULT_PLAY_CHART_DATA) {
+            return false;
+        }
 
-    if (!file) {
+        this.loadChartNotes(
+            window.DEFAULT_PLAY_CHART_DATA
+        );
 
-        alert("Choisissez une partition.");
-
-        return;
+        return true;
 
     }
 
-    const reader =
-        new FileReader();
+    async prepareChartFromURL(path) {
 
-    reader.onload = (e) => {
+        try {
 
-        const json =
-            JSON.parse(e.target.result);
+            const response = await fetch(path);
+
+            if (!response.ok) {
+                return false;
+            }
+
+            const json =
+                await response.json();
+
+            this.loadChartNotes(json);
+
+            return true;
+
+        } catch (error) {
+
+            console.error(error);
+
+            return false;
+
+        }
+
+    }
+
+    loadChartNotes(json) {
 
         chart.loadFromJSON(json);
 
@@ -157,13 +253,21 @@ prepareChart(callback) {
 
         }
 
-        callback();
+    }
 
-    };
+    resetRunState() {
 
-    reader.readAsText(file);
+        renderer.hideEndScreen();
 
-}
+        renderer.clearNotes(this.notes);
+
+        this.notes = [];
+
+        scoreManager.reset();
+
+        renderer.updateProgress(0, 1);
+
+    }
     //--------------------------------------------------
     // Boucle principale
     //--------------------------------------------------
@@ -401,6 +505,8 @@ if (this.mode === "record") {
         scoreManager.reset();
 
         renderer.hideEndScreen();
+
+        this.mode = "play";
 
     }
 

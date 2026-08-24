@@ -133,13 +133,60 @@ body {
     font-size: 38px;
 }
 
+#modeSelector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.modeButton {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: 1px solid #4b4b4b;
+    background: #2b2b2b;
+    color: #fff;
+    cursor: pointer;
+}
+
+.modeButton.active {
+    background: #00ff88;
+    color: #111;
+    border-color: #00ff88;
+    font-weight: bold;
+}
+
+.developerHidden {
+    display: none !important;
+}
+
+#modeInfo {
+    margin-bottom: 12px;
+    color: #cfcfcf;
+    font-size: 14px;
+}
+
+#editionControls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
 #musicFile {
-    margin-right: 15px;
+    margin-right: 0;
 }
 
 #playButton {
     padding: 10px 25px;
     font-size: 16px;
+    cursor: pointer;
+}
+
+#recordButton {
+    padding: 10px 20px;
+    font-size: 14px;
     cursor: pointer;
 }
 
@@ -226,6 +273,47 @@ body {
     background: #00ff88;
 
     box-shadow: 0 0 15px #00ff88;
+}
+
+#keyGuide {
+    position: absolute;
+    left: 0;
+    bottom: 46px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    pointer-events: none;
+}
+
+.keyHint {
+    justify-self: center;
+    min-width: 42px;
+    text-align: center;
+    padding: 6px 0;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #111;
+    opacity: 0.95;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
+}
+
+.keyHint.lane0 {
+    background: #ff5555;
+}
+
+.keyHint.lane1 {
+    background: #ffaa00;
+}
+
+.keyHint.lane2 {
+    background: #33cc66;
+}
+
+.keyHint.lane3 {
+    background: #3399ff;
 }
 
 /* ==========================
