@@ -280,6 +280,24 @@ body {
     box-shadow: 0 0 15px #00ff88;
 }
 
+#countdown {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.32);
+    color: #ffffff;
+    font-size: 96px;
+    font-weight: bold;
+    pointer-events: none;
+    text-shadow: 0 0 18px #00ff88;
+}
+
+#playfield.countdown-active .note {
+    visibility: hidden;
+}
+
 #keyGuide {
     position: absolute;
     left: 0;
@@ -360,6 +378,28 @@ body {
 .note.lane3 {
     left: 75%;
     background: #3399ff;
+}
+
+.note.hold-note {
+    border-radius: 8px 8px 3px 3px;
+    opacity: 0.8;
+}
+
+.note.hold-note::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 24px;
+    background: inherit;
+    border-radius: 3px;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+}
+
+.note.holding {
+    opacity: 1;
+    filter: brightness(1.35);
 }
 
 /* ==========================

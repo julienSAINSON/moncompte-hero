@@ -15,7 +15,8 @@
         },
         {
             "lane": 0,
-            "hitTime": 5.057
+            "hitTime": 5.057,
+            "holdDuration": 0.65
         },
         {
             "lane": 2,

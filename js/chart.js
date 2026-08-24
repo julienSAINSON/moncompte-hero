@@ -14,7 +14,8 @@ loadFromJSON(json) {
 
         this.addNote(
             note.lane,
-            note.hitTime
+            note.hitTime,
+            note.holdDuration
         );
 
     }
@@ -29,11 +30,12 @@ loadFromJSON(json) {
 
     }
 
-    addNote(lane, hitTime) {
+    addNote(lane, hitTime, holdDuration = 0) {
 
         this.notes.push({
             lane,
             hitTime,
+            holdDuration,
             hit: false,
             judged: false
         });

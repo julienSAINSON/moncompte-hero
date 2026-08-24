@@ -5,8 +5,34 @@ class AudioManager {
         this.audio = null;
         this.file = null;
         this.objectUrl = null;
+        this.beepContext = null;
 
         this.started = false;
+    }
+    playRecordingStartBeep() {
+
+        const AudioContextClass =
+            window.AudioContext || window.webkitAudioContext;
+
+        if (!AudioContextClass) {
+            return;
+        }
+
+        this.beepContext ??= new AudioContextClass();
+
+        const oscillator = this.beepContext.createOscillator();
+        const gain = this.beepContext.createGain();
+        const startTime = this.beepContext.currentTime;
+
+        oscillator.frequency.setValueAtTime(880, startTime);
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.15, startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.16);
+
+        oscillator.connect(gain);
+        gain.connect(this.beepContext.destination);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.17);
     }
 
     attachEndedListener() {
@@ -30,7 +56,7 @@ class AudioManager {
 
     }
 
-    load(file) {
+    load(file, playStartBeep = false) {
 
         this.file = file;
 
@@ -47,6 +73,10 @@ class AudioManager {
         this.audio.preload = "auto";
 
         this.attachEndedListener();
+
+        if (playStartBeep) {
+            this.playRecordingStartBeep();
+        }
 
     }
 

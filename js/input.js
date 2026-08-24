@@ -8,6 +8,8 @@ class InputManager {
             "d": 2,
             "f": 3
         };
+        this.pressedKeys = new Set();
+        this.pressedPointers = new Map();
 
         const params = new URLSearchParams(window.location.search);
         const forceTouch = params.get("touch") === "1";
@@ -38,6 +40,11 @@ class InputManager {
             "keydown",
             this.onKeyDown.bind(this)
         );
+        document.addEventListener(
+            "keyup",
+            this.onKeyUp.bind(this)
+        );
+        window.addEventListener("blur", () => this.releaseAllInputs());
 
     }
 
@@ -49,6 +56,12 @@ class InputManager {
 
         const key = event.key.toLowerCase();
 
+        if (key === " ") {
+            event.preventDefault();
+            window.game.toggleRecordingPause();
+            return;
+        }
+
         if (!(key in this.keyMap)) {
             return;
         }
@@ -57,7 +70,31 @@ class InputManager {
 
         const lane = this.keyMap[key];
 
-        window.game.hitLane(lane);
+        if (this.pressedKeys.has(key)) {
+            return;
+        }
+
+        this.pressedKeys.add(key);
+
+        window.game.pressLane(lane);
+
+    }
+
+    onKeyUp(event) {
+
+        const key = event.key.toLowerCase();
+
+        if (!(key in this.keyMap)) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (!this.pressedKeys.delete(key) || !window.game) {
+            return;
+        }
+
+        window.game.releaseLane(this.keyMap[key]);
 
     }
 
@@ -73,23 +110,42 @@ class InputManager {
             el.textContent = labels[i];
         });
 
-        // Écoute le touchstart sur chaque lane
+        // Les Pointer Events couvrent le tactile, le stylet et la souris.
         document.querySelectorAll(".lane").forEach((laneEl) => {
 
             const lane = parseInt(laneEl.dataset.lane, 10);
 
-            laneEl.addEventListener("touchstart", (e) => {
+            laneEl.addEventListener("pointerdown", (event) => {
 
-                e.preventDefault();
-                this.onLaneTap(lane);
+                event.preventDefault();
+                laneEl.setPointerCapture(event.pointerId);
+                this.pressedPointers.set(event.pointerId, lane);
+                this.onLanePress(lane);
 
-            }, { passive: false });
+            });
+
+            const releasePointer = (event) => {
+
+                const pressedLane = this.pressedPointers.get(event.pointerId);
+
+                if (pressedLane === undefined) {
+                    return;
+                }
+
+                event.preventDefault();
+                this.pressedPointers.delete(event.pointerId);
+                this.onLaneRelease(pressedLane);
+
+            };
+
+            laneEl.addEventListener("pointerup", releasePointer);
+            laneEl.addEventListener("pointercancel", releasePointer);
 
         });
 
     }
 
-    onLaneTap(lane) {
+    onLanePress(lane) {
 
         if (!window.game) {
             return;
@@ -104,7 +160,30 @@ class InputManager {
             setTimeout(() => laneEl.classList.remove("touch-active"), 100);
         }
 
-        window.game.hitLane(lane);
+        window.game.pressLane(lane);
+
+    }
+
+    onLaneRelease(lane) {
+
+        if (window.game) {
+            window.game.releaseLane(lane);
+        }
+
+    }
+
+    releaseAllInputs() {
+
+        for (const key of this.pressedKeys) {
+            window.game?.releaseLane(this.keyMap[key]);
+        }
+
+        for (const lane of this.pressedPointers.values()) {
+            window.game?.releaseLane(lane);
+        }
+
+        this.pressedKeys.clear();
+        this.pressedPointers.clear();
 
     }
 

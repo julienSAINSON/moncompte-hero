@@ -16,6 +16,7 @@ class Renderer {
 
         this.hitLineY = 0;
         this.pixelsPerSecond = 0;
+        this.lookaheadSeconds = 2;
         this._updateLayoutCache();
 
         window.addEventListener("resize", () => this._updateLayoutCache());
@@ -25,7 +26,8 @@ class Renderer {
     _updateLayoutCache() {
 
         this.hitLineY = this.playfield.clientHeight - 100;
-        this.pixelsPerSecond = this.hitLineY / 2; // lookahead 2 secondes
+        this.pixelsPerSecond =
+            this.hitLineY / this.lookaheadSeconds;
 
     }
 showJudgement(text){

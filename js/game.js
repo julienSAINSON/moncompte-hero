@@ -5,6 +5,7 @@
 const DEFAULT_PLAY_MP3 = "assets/default/saisis ton sciforma.mp3";
 const DEFAULT_PLAY_CHART = "assets/default/partition.json";
 const MAX_CONSECUTIVE_MISSES = 5;
+const MIN_HOLD_DURATION = 0.15;
 
 class Game {
 
@@ -19,6 +20,16 @@ class Game {
         this.maxConsecutiveMisses = MAX_CONSECUTIVE_MISSES;
 
         this.animationFrame = null;
+        this.countdownTimer = null;
+        this.isCountdownActive = false;
+        this.preRollEndsAt = null;
+        this.preRollDuration = 0;
+
+        this.countdownElement =
+            document.getElementById("countdown");
+
+        this.playfield =
+            document.getElementById("playfield");
 
         this.playButton =
             document.getElementById("playButton");
@@ -38,6 +49,9 @@ class Game {
         this.fileInput =
             document.getElementById("musicFile");
 
+        this.chartFileInput =
+            document.getElementById("chartFile");
+
         this.restartButton =
             document.getElementById("restartButton");
 
@@ -54,9 +68,33 @@ class Game {
         this.recordButton =
             document.getElementById("recordButton");
 
+        this.testChartButton =
+            document.getElementById("testChartButton");
+
+        this.pauseButton =
+            document.getElementById("pauseButton");
+
+        this.stopButton =
+            document.getElementById("stopButton");
+
         this.recordButton.addEventListener(
             "click",
             () => this.startRecording()
+        );
+
+        this.testChartButton.addEventListener(
+            "click",
+            () => this.startCustomPlay()
+        );
+
+        this.pauseButton.addEventListener(
+            "click",
+            () => this.toggleRecordingPause()
+        );
+
+        this.stopButton.addEventListener(
+            "click",
+            () => this.stopRecording()
         );
 
         this.modePlayButton.addEventListener(
@@ -72,6 +110,8 @@ class Game {
         this.mode = "play"; // play | record
         this.appMode = "play"; // play | edition
         this.recordedNotes = [];
+        this.recordingStarts = new Map();
+        this.isRecordingPaused = false;
 
         this.setAppMode("play");
 
@@ -103,6 +143,8 @@ class Game {
             !isPlayMode
         );
 
+        this.updateRecordingControls();
+
         this.modeInfo.textContent = isPlayMode
             ? "Mode Play : chargement automatique des fichiers par defaut."
             : "Mode Edition : choisis un MP3 puis appuie sur Demarrer l'edition pour generer le JSON.";
@@ -126,7 +168,6 @@ class Game {
         this.resetRunState();
 
         const chartLoaded =
-            this.loadDefaultChartData() ||
             await this.prepareChartFromURL(
                 encodeURI(DEFAULT_PLAY_CHART)
             );
@@ -152,11 +193,96 @@ class Game {
             return;
         }
 
-        audioManager.play();
-
+        this.preRollDuration = this.getPreRollDuration();
         this.running = true;
 
+        this.startCountdown(() => this.startPreRoll());
         this.loop();
+
+    }
+
+    startCountdown(onComplete) {
+
+        this.clearCountdown();
+
+        let remaining = 3;
+        this.isCountdownActive = true;
+        this.playfield.classList.add("countdown-active");
+        this.countdownElement.textContent = remaining;
+        this.countdownElement.classList.remove("hidden");
+
+        this.countdownTimer = setInterval(() => {
+
+            remaining--;
+
+            if (remaining > 0) {
+                this.countdownElement.textContent = remaining;
+                return;
+            }
+
+            this.clearCountdown();
+            onComplete();
+
+        }, 1000);
+
+    }
+
+    clearCountdown() {
+
+        if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+        }
+
+        this.isCountdownActive = false;
+        this.playfield.classList.remove("countdown-active");
+        this.countdownElement.classList.add("hidden");
+
+    }
+
+    getPreRollDuration() {
+
+        const firstNote = this.notes[0];
+
+        if (!firstNote) {
+            return 0;
+        }
+
+        return Math.max(
+            0,
+            renderer.lookaheadSeconds - firstNote.hitTime
+        );
+
+    }
+
+    startPreRoll() {
+
+        if (this.preRollDuration <= 0) {
+            audioManager.play();
+            return;
+        }
+
+        this.preRollEndsAt =
+            performance.now() + this.preRollDuration * 1000;
+
+    }
+
+    getGameTime() {
+
+        if (!this.preRollEndsAt) {
+            return audioManager.getCurrentTime();
+        }
+
+        const remaining = this.preRollEndsAt - performance.now();
+
+        if (remaining > 0) {
+            return -remaining / 1000;
+        }
+
+        this.preRollEndsAt = null;
+        audioManager.play();
+
+        return audioManager.getCurrentTime();
 
     }
 
@@ -183,16 +309,118 @@ class Game {
     this.resetRunState();
 
     this.recordedNotes = [];
+    this.recordingStarts.clear();
+    this.isRecordingPaused = false;
 
-    audioManager.load(file);
+    audioManager.load(file, true);
 
     audioManager.play();
 
     this.running = true;
 
+    this.updateRecordingControls();
+
     this.loop();
 
 }
+
+    async startCustomPlay() {
+
+        if (this.running) {
+            return;
+        }
+
+        const musicFile = this.fileInput.files[0];
+        const chartFile = this.chartFileInput.files[0];
+
+        if (!musicFile || !chartFile) {
+            alert("Choisissez un MP3 et une partition JSON.");
+            return;
+        }
+
+        let chartData;
+
+        try {
+            chartData = JSON.parse(await chartFile.text());
+        } catch (_) {
+            alert("Le fichier de partition n'est pas un JSON valide.");
+            return;
+        }
+
+        if (!Array.isArray(chartData.notes)) {
+            alert("La partition ne contient aucune liste de notes valide.");
+            return;
+        }
+
+        this.mode = "play";
+        this.resetRunState();
+        this.loadChartNotes(chartData);
+
+        audioManager.load(musicFile);
+        audioManager.play();
+
+        this.running = true;
+        this.updateRecordingControls();
+        this.loop();
+
+    }
+
+    updateRecordingControls() {
+
+        const canControlRecording =
+            this.mode === "record" && this.running;
+
+        this.pauseButton.disabled = !canControlRecording;
+        this.stopButton.disabled = !canControlRecording;
+        this.pauseButton.textContent = this.isRecordingPaused
+            ? "Reprendre"
+            : "Pause";
+
+    }
+
+    toggleRecordingPause() {
+
+        if (this.mode !== "record" || !this.running) {
+            return;
+        }
+
+        if (this.isRecordingPaused) {
+            audioManager.play();
+            this.isRecordingPaused = false;
+        } else {
+            inputManager.releaseAllInputs();
+            audioManager.pause();
+            this.isRecordingPaused = true;
+        }
+
+        this.updateRecordingControls();
+
+    }
+
+    stopRecording() {
+
+        if (this.mode !== "record" || !this.running) {
+            return;
+        }
+
+        inputManager.releaseAllInputs();
+        this.running = false;
+        this.isRecordingPaused = false;
+
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+        }
+
+        audioManager.stop();
+        this.downloadChart();
+        this.updateRecordingControls();
+
+        renderer.showEndScreen(
+            "Edition arretee",
+            "La partition incomplete a ete telechargee."
+        );
+
+    }
 
     //--------------------------------------------------
     // Génération des notes
@@ -216,7 +444,9 @@ class Game {
 
         try {
 
-            const response = await fetch(path);
+            const response = await fetch(path, {
+                cache: "no-store"
+            });
 
             if (!response.ok) {
                 return false;
@@ -250,7 +480,8 @@ class Game {
             this.notes.push(
                 new Note(
                     n.lane,
-                    n.hitTime
+                    n.hitTime,
+                    n.holdDuration
                 )
             );
 
@@ -280,16 +511,17 @@ class Game {
         if (!this.running)
             return;
 
-        const currentTime =
-            audioManager.getCurrentTime();
+        const currentTime = this.getGameTime();
 
         const duration =
             audioManager.getDuration();
 
-        renderer.renderNotes(
-            this.notes,
-            currentTime
-        );
+        if (!this.isCountdownActive) {
+            renderer.renderNotes(
+                this.notes,
+                currentTime
+            );
+        }
 
         renderer.updateProgress(
             currentTime,
@@ -348,19 +580,50 @@ renderer.showHitEffect("miss");
 
     }
 
-recordNote(lane) {
+startRecordingNote(lane) {
 
-    this.recordedNotes.push({
+    if (this.recordingStarts.has(lane)) {
+        return;
+    }
 
+    this.recordingStarts.set(
+        lane,
+        audioManager.getCurrentTime()
+    );
+
+}
+
+finishRecordingNote(lane) {
+
+    const hitTime = this.recordingStarts.get(lane);
+
+    if (hitTime === undefined) {
+        return;
+    }
+
+    this.recordingStarts.delete(lane);
+
+    const holdDuration = Math.max(
+        0,
+        audioManager.getCurrentTime() - hitTime
+    );
+
+    this.recordNote(lane, hitTime, holdDuration);
+
+}
+
+recordNote(lane, hitTime, holdDuration = 0) {
+
+    const note = {
         lane: lane,
+        hitTime: Number(hitTime.toFixed(3))
+    };
 
-        hitTime: Number(
-            audioManager
-                .getCurrentTime()
-                .toFixed(3)
-        )
+    if (holdDuration >= MIN_HOLD_DURATION) {
+        note.holdDuration = Number(holdDuration.toFixed(3));
+    }
 
-    });
+    this.recordedNotes.push(note);
 
     console.log(this.recordedNotes);
 
@@ -370,16 +633,20 @@ recordNote(lane) {
 // Gestion des touches
 //--------------------------------------------------
 
-    hitLane(lane) {
+    pressLane(lane) {
 if (this.mode === "record") {
 
-    this.recordNote(lane);
+    if (!this.running || this.isRecordingPaused) {
+        return;
+    }
+
+    this.startRecordingNote(lane);
 
     return;
 
 }
 
-        if (!this.running)
+        if (!this.running || this.isCountdownActive)
             return;
 
         const currentTime =
@@ -419,8 +686,15 @@ if (this.mode === "record") {
         if (!bestNote.canBeHit(currentTime))
             return;
 
-        const judgement =
-            bestNote.judge(currentTime);
+        if (bestNote.isHoldNote()) {
+
+            bestNote.holding = true;
+            bestNote.element.classList.add("holding");
+            return;
+
+        }
+
+        const judgement = bestNote.judge(currentTime);
 
         bestNote.hit = true;
         bestNote.judged = true;
@@ -433,8 +707,63 @@ renderer.showJudgement(judgement);
 
     }
 
+    releaseLane(lane) {
+
+        if (this.mode === "record") {
+            if (!this.running || this.isRecordingPaused) {
+                return;
+            }
+
+            this.finishRecordingNote(lane);
+            return;
+        }
+
+        if (
+            !this.running ||
+            this.mode !== "play" ||
+            this.isCountdownActive
+        ) {
+            return;
+        }
+
+        const heldNote = this.notes.find((note) =>
+            note.lane === lane && note.holding && !note.judged
+        );
+
+        if (!heldNote) {
+            return;
+        }
+
+        const currentTime = audioManager.getCurrentTime();
+        const judgement = heldNote.canBeReleased(currentTime)
+            ? heldNote.judge(currentTime)
+            : "miss";
+
+        heldNote.hit = true;
+        heldNote.judged = true;
+        heldNote.destroy();
+        scoreManager.addJudgement(judgement);
+        renderer.showHitEffect(judgement);
+        renderer.showJudgement(judgement);
+
+    }
+
+    hitLane(lane) {
+
+        this.pressLane(lane);
+
+    }
+
 
 downloadChart() {
+
+    for (const lane of this.recordingStarts.keys()) {
+        this.finishRecordingNote(lane);
+    }
+
+    this.recordedNotes.sort(
+        (firstNote, secondNote) => firstNote.hitTime - secondNote.hitTime
+    );
 
     const chart = {
 
@@ -476,6 +805,7 @@ downloadChart() {
 if (this.mode === "record") {
 
     this.downloadChart();
+    this.isRecordingPaused = false;
 
 }
 
@@ -488,6 +818,8 @@ if (this.mode === "record") {
             );
 
         }
+
+        this.updateRecordingControls();
 
         renderer.showEndScreen();
 
@@ -514,6 +846,8 @@ if (this.mode === "record") {
     restart() {
 
         this.running = false;
+        this.clearCountdown();
+        this.preRollEndsAt = null;
 
         if (this.animationFrame) {
 
@@ -536,6 +870,9 @@ if (this.mode === "record") {
         renderer.hideEndScreen();
 
         this.mode = "play";
+        this.isRecordingPaused = false;
+        this.recordingStarts.clear();
+        this.updateRecordingControls();
 
     }
 

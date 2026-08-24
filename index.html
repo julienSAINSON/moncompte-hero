@@ -38,8 +38,21 @@
                 type="file"
                 id="musicFile"
                 accept=".mp3,audio/mpeg">
+            <input
+                type="file"
+                id="chartFile"
+                accept=".json,application/json">
             <button id="recordButton">
                 Demarrer l'edition
+            </button>
+            <button id="testChartButton">
+                Tester la partition
+            </button>
+            <button id="pauseButton" disabled>
+                Pause
+            </button>
+            <button id="stopButton" disabled>
+                Stop
             </button>
         </div>
 
@@ -82,6 +95,7 @@
 
             <div id="hitLine"></div>
             <div id="hitEffect"></div>
+            <div id="countdown" class="hidden" aria-live="polite"></div>
 
             <div id="keyGuide" aria-label="Touches de jeu">
                 <span class="keyHint lane0">A</span>
@@ -134,7 +148,6 @@
     <script src="js/score.js"></script>
     <script src="js/input.js"></script>
     <script src="js/renderer.js"></script>
-    <script src="assets/default/partition.js"></script>
     <script src="js/game.js"></script>
 
 </body>
