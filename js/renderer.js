@@ -14,6 +14,17 @@ class Renderer {
 
         this.endMessage = document.getElementById("endMessage");
 
+        this.shareScoreButton =
+            document.getElementById("shareScoreButton");
+
+        this.shareStatus =
+            document.getElementById("shareStatus");
+
+        this.shareScoreButton.addEventListener(
+            "click",
+            () => this.shareScore()
+        );
+
         this.hitLineY = 0;
         this.pixelsPerSecond = 0;
         this.lookaheadSeconds = 2;
@@ -107,6 +118,8 @@ showHitEffect(type) {
 
         this.endMessage.textContent = message;
 
+        this.shareStatus.textContent = "";
+
         this.endScreen.classList.remove("hidden");
 
     }
@@ -114,6 +127,44 @@ showHitEffect(type) {
     hideEndScreen() {
 
         this.endScreen.classList.add("hidden");
+        this.shareStatus.textContent = "";
+
+    }
+
+    getShareText() {
+
+        const score = window.scoreManager;
+
+        return "Mon score OpenRhythm : " + score.score +
+            " points | Precision : " +
+            score.accuracy.toFixed(2) + "% | Meilleur combo : " +
+            score.bestCombo;
+
+    }
+
+    async shareScore() {
+
+        const text = this.getShareText();
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: "Mon score OpenRhythm",
+                    text
+                });
+                this.shareStatus.textContent = "Score partage.";
+                return;
+            }
+
+            await navigator.clipboard.writeText(text);
+            this.shareStatus.textContent =
+                "Score copie dans le presse-papiers.";
+        } catch (error) {
+            if (error.name !== "AbortError") {
+                this.shareStatus.textContent =
+                    "Le partage n'est pas disponible sur cet appareil.";
+            }
+        }
 
     }
 

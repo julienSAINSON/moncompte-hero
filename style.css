@@ -469,6 +469,22 @@ body {
     cursor: pointer;
 }
 
+#shareScoreButton {
+    padding: 12px 28px;
+    border: 2px solid #00ff88;
+    background: transparent;
+    color: #00ff88;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#shareStatus {
+    min-height: 20px;
+    color: #cfcfcf;
+    font-size: 16px;
+}
+
 /* ==========================
    TOUCH DEVICE
 ========================== */
