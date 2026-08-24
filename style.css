@@ -114,6 +114,9 @@ body {
     color: white;
     font-family: Arial, Helvetica, sans-serif;
     overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ==========================
@@ -210,6 +213,8 @@ body {
 #game {
     display: flex;
     justify-content: center;
+    flex: 1;
+    min-height: 0;
 }
 
 #playfield {
@@ -217,8 +222,7 @@ body {
     position: relative;
 
     width: 420px;
-    /* Hauteur max pour tenir dans le viewport (menu ~90px + hud ~60px + progress ~50px) */
-    height: min(700px, calc(100vh - 200px));
+    height: min(700px, 100%);
 
     background: #222;
 
@@ -470,42 +474,45 @@ body.desktop-device .lane {
    MENU COMPACT — touch device
 ========================== */
 
-body.touch-device #menu {
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
+@media (max-width: 480px) {
 
-body.touch-device #menu h1 {
-    font-size: 18px;
-    margin-bottom: 0;
-    white-space: nowrap;
-}
+    body.touch-device #menu {
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
 
-body.touch-device #modeSelector {
-    margin-bottom: 0;
-    gap: 6px;
-}
+    body.touch-device #menu h1 {
+        font-size: 18px;
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
 
-body.touch-device .modeButton {
-    padding: 5px 10px;
-    font-size: 12px;
-}
+    body.touch-device #modeSelector {
+        margin-bottom: 0;
+        gap: 6px;
+    }
 
-/* On masque les éléments non essentiels pendant le jeu */
-body.touch-device #modeInfo {
-    display: none;
-}
+    body.touch-device .modeButton {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
 
-body.touch-device #editionControls {
-    display: none !important;
-}
+    /* On masque les éléments non essentiels pendant le jeu */
+    body.touch-device #modeInfo {
+        display: none;
+    }
 
-body.touch-device #playButton {
-    padding: 6px 16px;
-    font-size: 14px;
+    body.touch-device #editionControls {
+        display: none !important;
+    }
+
+    body.touch-device #playButton {
+        padding: 6px 16px;
+        font-size: 14px;
+    }
 }
 
 /* ==========================
