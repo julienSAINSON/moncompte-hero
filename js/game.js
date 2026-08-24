@@ -4,6 +4,7 @@
 
 const DEFAULT_PLAY_MP3 = "assets/default/saisis ton sciforma.mp3";
 const DEFAULT_PLAY_CHART = "assets/default/partition.json";
+const MAX_CONSECUTIVE_MISSES = 5;
 
 class Game {
 
@@ -14,6 +15,8 @@ class Game {
         this.notes = [];
 
         this.running = false;
+
+        this.maxConsecutiveMisses = MAX_CONSECUTIVE_MISSES;
 
         this.animationFrame = null;
 
@@ -297,6 +300,10 @@ class Game {
             currentTime
         );
 
+        if (!this.running) {
+            return;
+        }
+
         this.animationFrame =
             requestAnimationFrame(
                 () => this.loop()
@@ -325,6 +332,14 @@ class Game {
                     "miss"
                 );
 renderer.showHitEffect("miss");
+
+                if (
+                    scoreManager.consecutiveMisses >=
+                    this.maxConsecutiveMisses
+                ) {
+                    this.endForConsecutiveMisses();
+                    return;
+                }
 
 
             }
@@ -475,6 +490,20 @@ if (this.mode === "record") {
         }
 
         renderer.showEndScreen();
+
+    }
+
+    endForConsecutiveMisses() {
+
+        this.running = false;
+
+        audioManager.pause();
+
+        renderer.showEndScreen(
+            "Echec de la partie",
+            "Tu as enchaine " + this.maxConsecutiveMisses +
+            " fautes. Recommence et ameliore-toi !"
+        );
 
     }
 

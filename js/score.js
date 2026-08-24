@@ -10,6 +10,7 @@ class ScoreManager {
 
         this.score = 0;
         this.combo = 0;
+        this.consecutiveMisses = 0;
 
         this.perfect = 0;
         this.great = 0;
@@ -30,6 +31,7 @@ class ScoreManager {
             case "perfect":
                 this.score += 300;
                 this.combo++;
+                this.consecutiveMisses = 0;
 if (this.combo > this.bestCombo) {
     this.bestCombo = this.combo;
 }
@@ -39,6 +41,7 @@ if (this.combo > this.bestCombo) {
             case "great":
                 this.score += 200;
                 this.combo++;
+                this.consecutiveMisses = 0;
 if (this.combo > this.bestCombo) {
     this.bestCombo = this.combo;
 }
@@ -48,6 +51,7 @@ if (this.combo > this.bestCombo) {
             case "good":
                 this.score += 100;
                 this.combo++;
+                this.consecutiveMisses = 0;
 if (this.combo > this.bestCombo) {
     this.bestCombo = this.combo;
 }
@@ -56,6 +60,7 @@ if (this.combo > this.bestCombo) {
 
             case "miss":
                 this.combo = 0;
+                this.consecutiveMisses++;
                 this.miss++;
                 break;
 

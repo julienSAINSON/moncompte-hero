@@ -10,6 +10,10 @@ class Renderer {
 
         this.finalScore = document.getElementById("finalScore");
 
+        this.endTitle = document.getElementById("endTitle");
+
+        this.endMessage = document.getElementById("endMessage");
+
         this.hitLineY = 0;
         this.pixelsPerSecond = 0;
         this._updateLayoutCache();
@@ -92,10 +96,14 @@ showHitEffect(type) {
 
     }
 
-    showEndScreen() {
+    showEndScreen(title = "Fin de la partie", message = "") {
+
+        this.endTitle.textContent = title;
 
         this.finalScore.textContent =
             "Score final : " + window.scoreManager.score;
+
+        this.endMessage.textContent = message;
 
         this.endScreen.classList.remove("hidden");
 
