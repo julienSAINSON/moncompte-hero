@@ -1,0 +1,19 @@
+{
+    "name": "OpenRhythm",
+    "short_name": "OpenRhythm",
+    "description": "Jeu de rythme a quatre touches.",
+    "lang": "fr",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#111111",
+    "theme_color": "#00ff88",
+    "icons": [
+        {
+            "src": "assets/icons/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
