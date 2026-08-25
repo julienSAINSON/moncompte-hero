@@ -559,7 +559,8 @@ class Game {
                 new Note(
                     n.lane,
                     n.hitTime,
-                    n.holdDuration
+                    n.holdDuration,
+                    n.toLane
                 )
             );
 

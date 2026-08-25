@@ -56,6 +56,8 @@ class BattlePlayer {
                 hitTime: n.hitTime,
                 holdDuration,
                 releaseTime: n.hitTime + holdDuration,
+                // colonne d'arrivee pour une note diagonale ; null/undefined = hold vertical classique
+                toLane: (n.toLane === null || n.toLane === undefined) ? n.lane : n.toLane,
                 judged: false,
                 hit: false,
                 holding: false,

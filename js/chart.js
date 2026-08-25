@@ -15,7 +15,8 @@ loadFromJSON(json) {
         this.addNote(
             note.lane,
             note.hitTime,
-            note.holdDuration
+            note.holdDuration,
+            note.toLane
         );
 
     }
@@ -30,12 +31,14 @@ loadFromJSON(json) {
 
     }
 
-    addNote(lane, hitTime, holdDuration = 0) {
+    addNote(lane, hitTime, holdDuration = 0, toLane = null) {
 
         this.notes.push({
             lane,
             hitTime,
             holdDuration,
+            // colonne d'arrivee pour une note diagonale ; null/undefined = hold vertical classique
+            toLane: (toLane === null || toLane === undefined) ? lane : toLane,
             hit: false,
             judged: false
         });

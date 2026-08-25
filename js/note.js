@@ -3,12 +3,14 @@ const HOLD_START_WINDOW = 0.15;
 
 class Note {
 
-    constructor(lane, hitTime, holdDuration = 0) {
+    constructor(lane, hitTime, holdDuration = 0, toLane = null) {
 
         this.lane = lane;
         this.hitTime = hitTime;
         this.holdDuration = Math.max(0, Number(holdDuration) || 0);
         this.releaseTime = hitTime + this.holdDuration;
+        // colonne d'arrivee pour une note diagonale ; par defaut identique a lane (hold vertical classique)
+        this.toLane = (toLane === null || toLane === undefined) ? lane : toLane;
         this.holding = false;
 
         this.hit = false;
