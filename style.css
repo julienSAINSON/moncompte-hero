@@ -109,6 +109,11 @@
     box-sizing: border-box;
 }
 
+html {
+    /* desactive le geste "glisser pour revenir en arriere" de Chrome sur ecran tactile */
+    overscroll-behavior-x: none;
+}
+
 body {
     background: #111;
     color: white;
@@ -117,6 +122,9 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    /* desactive le geste "glisser pour revenir en arriere" de Chrome sur ecran tactile */
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
 }
 
 /* ==========================
@@ -230,6 +238,8 @@ body {
     border-right: 3px solid #555;
 
     overflow: hidden;
+
+    touch-action: none;
 }
 
 .lane {
@@ -243,6 +253,12 @@ body {
 
     border-left: 1px solid #444;
     border-right: 1px solid #444;
+
+    /* empeche le navigateur d'intercepter le glissement du doigt comme un scroll/selection/callout natif */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .lane:nth-child(1) {
@@ -467,6 +483,11 @@ body {
     background: #222;
 
     overflow: hidden;
+
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 #battleTop {

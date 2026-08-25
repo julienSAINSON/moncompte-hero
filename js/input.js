@@ -112,6 +112,8 @@ class InputManager {
 
             laneEl.addEventListener("pointerdown", (event) => {
 
+                console.log("[DEBUG pointerdown]", event.pointerType, event.pointerId, lane);
+
                 event.preventDefault();
                 laneEl.setPointerCapture(event.pointerId);
                 this.pressedPointers.set(event.pointerId, {
@@ -120,7 +122,7 @@ class InputManager {
                 });
                 this.onLanePress(lane);
 
-            });
+            }, { passive: false });
 
             laneEl.addEventListener("pointermove", (event) => {
 
@@ -130,6 +132,8 @@ class InputManager {
                     return;
                 }
 
+                event.preventDefault();
+
                 // suit le doigt lors d'un glissement (notes en diagonale)
                 const currentLane = this.laneFromClientX(laneEl, event.clientX);
 
@@ -137,24 +141,33 @@ class InputManager {
                     pointerState.currentLane = currentLane;
                 }
 
-            });
+            }, { passive: false });
 
             const releasePointer = (event) => {
+
+                console.log("[DEBUG " + event.type + "]", event.pointerType, event.pointerId);
 
                 const pointerState = this.pressedPointers.get(event.pointerId);
 
                 if (!pointerState) {
+                    console.log("[DEBUG] pointerState introuvable pour cet id");
                     return;
                 }
 
                 event.preventDefault();
                 this.pressedPointers.delete(event.pointerId);
-                this.onLaneRelease(pointerState.startLane, pointerState.currentLane);
+
+                // utilise la position exacte au relachement plutot que le dernier pointermove connu
+                const releaseLane =
+                    this.laneFromClientX(laneEl, event.clientX) ??
+                    pointerState.currentLane;
+
+                this.onLaneRelease(pointerState.startLane, releaseLane);
 
             };
 
-            laneEl.addEventListener("pointerup", releasePointer);
-            laneEl.addEventListener("pointercancel", releasePointer);
+            laneEl.addEventListener("pointerup", releasePointer, { passive: false });
+            laneEl.addEventListener("pointercancel", releasePointer, { passive: false });
 
         });
 

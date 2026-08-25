@@ -399,13 +399,15 @@ class BattleGame {
                 currentLaneByPointer.set(event.pointerId, lane);
                 player.press(lane, this.getGameTime());
 
-            });
+            }, { passive: false });
 
             laneEl.addEventListener("pointermove", (event) => {
 
                 if (!currentLaneByPointer.has(event.pointerId)) {
                     return;
                 }
+
+                event.preventDefault();
 
                 // suit le doigt lors d'un glissement (notes en diagonale)
                 const rect = player.root.getBoundingClientRect();
@@ -418,7 +420,7 @@ class BattleGame {
 
                 currentLaneByPointer.set(event.pointerId, currentLane);
 
-            });
+            }, { passive: false });
 
             const releasePointer = (event) => {
 
@@ -426,8 +428,14 @@ class BattleGame {
                     return;
                 }
 
-                const releaseLane =
-                    currentLaneByPointer.get(event.pointerId) ?? lane;
+                // utilise la position exacte au relachement plutot que le dernier pointermove connu
+                const rect = player.root.getBoundingClientRect();
+                const laneWidth = rect.width / 4;
+                const relativeX = event.clientX - rect.left;
+                const releaseLane = Math.max(
+                    0,
+                    Math.min(3, Math.floor(relativeX / laneWidth))
+                );
 
                 currentLaneByPointer.delete(event.pointerId);
 
@@ -436,8 +444,21 @@ class BattleGame {
 
             };
 
-            laneEl.addEventListener("pointerup", releasePointer);
-            laneEl.addEventListener("pointercancel", releasePointer);
+            laneEl.addEventListener("pointerup", releasePointer, { passive: false });
+            laneEl.addEventListener("pointercancel", releasePointer, { passive: false });
+
+            // filet de securite : sur certains ecrans tactiles, un geste natif (retour, defilement)
+            // peut intercepter le glissement avant meme les Pointer Events. On bloque au plus tot.
+            laneEl.addEventListener(
+                "touchstart",
+                (event) => event.preventDefault(),
+                { passive: false }
+            );
+            laneEl.addEventListener(
+                "touchmove",
+                (event) => event.preventDefault(),
+                { passive: false }
+            );
 
         });
 
