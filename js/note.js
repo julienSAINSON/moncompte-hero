@@ -1,5 +1,6 @@
 const NOTE_HIT_WINDOW = 0.10;
 const HOLD_START_WINDOW = 0.15;
+const LANE_COLORS = ["#ff5555", "#ffaa00", "#33cc66", "#3399ff"];
 
 class Note {
 
@@ -20,7 +21,17 @@ class Note {
         this.element.className = "note lane" + lane;
 
         if (this.isHoldNote()) {
-            this.element.classList.add("hold-note");
+            this.element.classList.add(
+                this.isDiagonal() ? "diagonal-note" : "hold-note"
+            );
+
+            if (this.isDiagonal()) {
+                // degrade de la couleur de depart vers la couleur d'arrivee
+                this.element.style.background =
+                    "linear-gradient(to bottom, " +
+                    LANE_COLORS[this.toLane] + ", " +
+                    LANE_COLORS[this.lane] + ")";
+            }
         }
 
         document
@@ -40,18 +51,50 @@ class Note {
         ((this.hitTime - currentTime) * renderer.pixelsPerSecond);
 
     if (this.isHoldNote()) {
-        const holdHeight =
-            this.holdDuration * renderer.pixelsPerSecond;
+        if (this.isDiagonal()) {
+            this.updateDiagonal(y);
+        } else {
+            const holdHeight =
+                this.holdDuration * renderer.pixelsPerSecond;
 
-        this.element.style.height =
-            holdHeight + 24 + "px";
-        this.element.style.top = (y - holdHeight) + "px";
+            this.element.style.height =
+                holdHeight + 24 + "px";
+            this.element.style.top = (y - holdHeight) + "px";
+        }
         return;
     }
 
     this.element.style.top = y + "px";
 
 }
+
+    isDiagonal() {
+        return this.toLane !== this.lane;
+    }
+
+    updateDiagonal(y) {
+
+        const holdHeight =
+            this.holdDuration * renderer.pixelsPerSecond;
+
+        const laneWidth = renderer.playfield.clientWidth / 4;
+        const xStart = this.lane * laneWidth + laneWidth / 2;
+        const xEnd = this.toLane * laneWidth + laneWidth / 2;
+        const deltaX = xStart - xEnd;
+
+        const thickness = laneWidth - 16; // meme largeur qu'une note classique
+        const boxHeight = holdHeight;
+        const skewDeg =
+            Math.atan2(deltaX, holdHeight) * (180 / Math.PI);
+
+        this.element.style.left = (xEnd - thickness / 2) + "px";
+        this.element.style.top = (y - holdHeight) + "px";
+        this.element.style.width = thickness + "px";
+        this.element.style.height = boxHeight + "px";
+        this.element.style.transformOrigin = "top";
+        this.element.style.transform = "skewX(" + skewDeg + "deg)";
+
+    }
 
     destroy() {
 

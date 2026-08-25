@@ -806,7 +806,7 @@ renderer.showJudgement(judgement);
         }
 
         const heldNote = this.notes.find((note) =>
-            note.lane === lane && note.holding && !note.judged
+            note.toLane === lane && note.holding && !note.judged
         );
 
         if (!heldNote) {

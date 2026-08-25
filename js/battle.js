@@ -7,6 +7,7 @@ const BATTLE_HOLD_START_WINDOW = 0.15;
 const BATTLE_EDGE_MARGIN = 100; // distance (px) entre le bord de l'ecran et la ligne verte
 const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: -3 };
 const BATTLE_PX_PER_POINT = 6; // sensibilite du deplacement de la barre centrale
+const BATTLE_LANE_COLORS = ["#ff5555", "#ffaa00", "#33cc66", "#3399ff"];
 
 class BattlePlayer {
 
@@ -45,8 +46,22 @@ class BattlePlayer {
             const element = document.createElement("div");
             element.className = "note lane" + n.lane;
 
+            const toLane = (n.toLane === null || n.toLane === undefined)
+                ? n.lane
+                : n.toLane;
+
             if (holdDuration > 0) {
-                element.classList.add("hold-note");
+                element.classList.add(
+                    toLane !== n.lane ? "diagonal-note" : "hold-note"
+                );
+
+                if (toLane !== n.lane) {
+                    // degrade de la couleur de depart vers la couleur d'arrivee
+                    element.style.background =
+                        "linear-gradient(to bottom, " +
+                        BATTLE_LANE_COLORS[toLane] + ", " +
+                        BATTLE_LANE_COLORS[n.lane] + ")";
+                }
             }
 
             this.root.appendChild(element);
@@ -57,7 +72,7 @@ class BattlePlayer {
                 holdDuration,
                 releaseTime: n.hitTime + holdDuration,
                 // colonne d'arrivee pour une note diagonale ; null/undefined = hold vertical classique
-                toLane: (n.toLane === null || n.toLane === undefined) ? n.lane : n.toLane,
+                toLane,
                 judged: false,
                 hit: false,
                 holding: false,
@@ -105,8 +120,12 @@ class BattlePlayer {
                 const holdHeight =
                     note.holdDuration * this.pixelsPerSecond;
 
-                note.element.style.height = holdHeight + 24 + "px";
-                note.element.style.top = (y - holdHeight) + "px";
+                if (note.toLane !== note.lane) {
+                    this.updateDiagonal(note, y, holdHeight);
+                } else {
+                    note.element.style.height = holdHeight + 24 + "px";
+                    note.element.style.top = (y - holdHeight) + "px";
+                }
 
             } else {
 
@@ -115,6 +134,27 @@ class BattlePlayer {
             }
 
         }
+
+    }
+
+    updateDiagonal(note, y, holdHeight) {
+
+        const laneWidth = this.root.clientWidth / 4;
+        const xStart = note.lane * laneWidth + laneWidth / 2;
+        const xEnd = note.toLane * laneWidth + laneWidth / 2;
+        const deltaX = xStart - xEnd;
+
+        const thickness = laneWidth - 16; // meme largeur qu'une note classique
+        const boxHeight = holdHeight;
+        const skewDeg =
+            Math.atan2(deltaX, holdHeight) * (180 / Math.PI);
+
+        note.element.style.left = (xEnd - thickness / 2) + "px";
+        note.element.style.top = (y - holdHeight) + "px";
+        note.element.style.width = thickness + "px";
+        note.element.style.height = boxHeight + "px";
+        note.element.style.transformOrigin = "top";
+        note.element.style.transform = "skewX(" + skewDeg + "deg)";
 
     }
 
@@ -208,7 +248,7 @@ class BattlePlayer {
     release(lane, currentTime) {
 
         const heldNote = this.notes.find((note) =>
-            note.lane === lane && note.holding && !note.judged
+            note.toLane === lane && note.holding && !note.judged
         );
 
         if (!heldNote) {
@@ -343,6 +383,7 @@ class BattleGame {
         player.root.querySelectorAll(".lane").forEach((laneEl) => {
 
             const lane = parseInt(laneEl.dataset.lane, 10);
+            const currentLaneByPointer = new Map();
 
             laneEl.addEventListener("pointerdown", (event) => {
 
@@ -352,7 +393,27 @@ class BattleGame {
 
                 event.preventDefault();
                 laneEl.setPointerCapture(event.pointerId);
+                currentLaneByPointer.set(event.pointerId, lane);
                 player.press(lane, this.getGameTime());
+
+            });
+
+            laneEl.addEventListener("pointermove", (event) => {
+
+                if (!currentLaneByPointer.has(event.pointerId)) {
+                    return;
+                }
+
+                // suit le doigt lors d'un glissement (notes en diagonale)
+                const rect = player.root.getBoundingClientRect();
+                const laneWidth = rect.width / 4;
+                const relativeX = event.clientX - rect.left;
+                const currentLane = Math.max(
+                    0,
+                    Math.min(3, Math.floor(relativeX / laneWidth))
+                );
+
+                currentLaneByPointer.set(event.pointerId, currentLane);
 
             });
 
@@ -362,8 +423,13 @@ class BattleGame {
                     return;
                 }
 
+                const releaseLane =
+                    currentLaneByPointer.get(event.pointerId) ?? lane;
+
+                currentLaneByPointer.delete(event.pointerId);
+
                 event.preventDefault();
-                player.release(lane, this.getGameTime());
+                player.release(releaseLane, this.getGameTime());
 
             };
 

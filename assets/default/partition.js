@@ -2,6 +2,12 @@
     "title": "saisis ton sciforma.mp3",
     "notes": [
         {
+            "lane": 0,
+            "hitTime": 1.35,
+            "holdDuration": 1.0,
+            "toLane": 3
+        },
+        {
             "lane": 3,
             "hitTime": 3.525
         },

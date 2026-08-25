@@ -397,6 +397,12 @@ body {
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
 }
 
+.note.diagonal-note {
+    margin-left: 0;
+    border-radius: 10px;
+    opacity: 0.85;
+}
+
 .note.holding {
     opacity: 1;
     filter: brightness(1.35);

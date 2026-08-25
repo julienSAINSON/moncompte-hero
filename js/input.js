@@ -118,6 +118,21 @@ class InputManager {
 
             });
 
+            laneEl.addEventListener("pointermove", (event) => {
+
+                if (!this.pressedPointers.has(event.pointerId)) {
+                    return;
+                }
+
+                // suit le doigt lors d'un glissement (notes en diagonale)
+                const currentLane = this.laneFromClientX(laneEl, event.clientX);
+
+                if (currentLane !== null) {
+                    this.pressedPointers.set(event.pointerId, currentLane);
+                }
+
+            });
+
             const releasePointer = (event) => {
 
                 const pressedLane = this.pressedPointers.get(event.pointerId);
@@ -136,6 +151,23 @@ class InputManager {
             laneEl.addEventListener("pointercancel", releasePointer);
 
         });
+
+    }
+
+    laneFromClientX(laneEl, clientX) {
+
+        const container = laneEl.parentElement;
+
+        if (!container) {
+            return null;
+        }
+
+        const rect = container.getBoundingClientRect();
+        const laneWidth = rect.width / 4;
+        const relativeX = clientX - rect.left;
+        const index = Math.floor(relativeX / laneWidth);
+
+        return Math.max(0, Math.min(3, index));
 
     }
 
