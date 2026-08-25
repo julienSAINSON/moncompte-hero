@@ -113,14 +113,19 @@ class InputManager {
 
                 event.preventDefault();
                 laneEl.setPointerCapture(event.pointerId);
-                this.pressedPointers.set(event.pointerId, lane);
+                this.pressedPointers.set(event.pointerId, {
+                    startLane: lane,
+                    currentLane: lane
+                });
                 this.onLanePress(lane);
 
             });
 
             laneEl.addEventListener("pointermove", (event) => {
 
-                if (!this.pressedPointers.has(event.pointerId)) {
+                const pointerState = this.pressedPointers.get(event.pointerId);
+
+                if (!pointerState) {
                     return;
                 }
 
@@ -128,22 +133,22 @@ class InputManager {
                 const currentLane = this.laneFromClientX(laneEl, event.clientX);
 
                 if (currentLane !== null) {
-                    this.pressedPointers.set(event.pointerId, currentLane);
+                    pointerState.currentLane = currentLane;
                 }
 
             });
 
             const releasePointer = (event) => {
 
-                const pressedLane = this.pressedPointers.get(event.pointerId);
+                const pointerState = this.pressedPointers.get(event.pointerId);
 
-                if (pressedLane === undefined) {
+                if (!pointerState) {
                     return;
                 }
 
                 event.preventDefault();
                 this.pressedPointers.delete(event.pointerId);
-                this.onLaneRelease(pressedLane);
+                this.onLaneRelease(pointerState.startLane, pointerState.currentLane);
 
             };
 
@@ -190,10 +195,10 @@ class InputManager {
 
     }
 
-    onLaneRelease(lane) {
+    onLaneRelease(startLane, endLane = startLane) {
 
         if (window.game) {
-            window.game.releaseLane(lane);
+            window.game.releaseLane(startLane, endLane);
         }
 
     }
@@ -204,8 +209,8 @@ class InputManager {
             window.game?.releaseLane(this.keyMap[key]);
         }
 
-        for (const lane of this.pressedPointers.values()) {
-            window.game?.releaseLane(lane);
+        for (const { startLane, currentLane } of this.pressedPointers.values()) {
+            window.game?.releaseLane(startLane, currentLane);
         }
 
         this.pressedKeys.clear();

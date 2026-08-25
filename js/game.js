@@ -672,7 +672,7 @@ startRecordingNote(lane) {
 
 }
 
-finishRecordingNote(lane) {
+finishRecordingNote(lane, endLane = lane) {
 
     const hitTime = this.recordingStarts.get(lane);
 
@@ -687,11 +687,11 @@ finishRecordingNote(lane) {
         audioManager.getCurrentTime() - hitTime
     );
 
-    this.recordNote(lane, hitTime, holdDuration);
+    this.recordNote(lane, hitTime, holdDuration, endLane);
 
 }
 
-recordNote(lane, hitTime, holdDuration = 0) {
+recordNote(lane, hitTime, holdDuration = 0, toLane = lane) {
 
     const note = {
         lane: lane,
@@ -700,6 +700,10 @@ recordNote(lane, hitTime, holdDuration = 0) {
 
     if (holdDuration >= MIN_HOLD_DURATION) {
         note.holdDuration = Number(holdDuration.toFixed(3));
+
+        if (toLane !== lane) {
+            note.toLane = toLane;
+        }
     }
 
     this.recordedNotes.push(note);
@@ -786,14 +790,14 @@ renderer.showJudgement(judgement);
 
     }
 
-    releaseLane(lane) {
+    releaseLane(lane, endLane = lane) {
 
         if (this.mode === "record") {
             if (!this.running || this.isRecordingPaused) {
                 return;
             }
 
-            this.finishRecordingNote(lane);
+            this.finishRecordingNote(lane, endLane);
             return;
         }
 
@@ -806,7 +810,7 @@ renderer.showJudgement(judgement);
         }
 
         const heldNote = this.notes.find((note) =>
-            note.toLane === lane && note.holding && !note.judged
+            note.toLane === endLane && note.holding && !note.judged
         );
 
         if (!heldNote) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "openrhythm-v1";
+const CACHE_NAME = "openrhythm-v2";
 const APP_SHELL = [
     "./",
     "index.html",
@@ -11,8 +11,10 @@ const APP_SHELL = [
     "js/score.js",
     "js/input.js",
     "js/renderer.js",
+    "js/battle.js",
     "js/game.js",
     "assets/default/partition.json",
+    "assets/default/partition.js",
     "assets/default/saisis%20ton%20sciforma.mp3"
 ];
 
