@@ -34,6 +34,9 @@ class Game {
         this.playButton =
             document.getElementById("playButton");
 
+        this.modeSelector =
+            document.getElementById("modeSelector");
+
         this.modePlayButton =
             document.getElementById("modePlayButton");
 
@@ -112,6 +115,20 @@ class Game {
         this.recordedNotes = [];
         this.recordingStarts = new Map();
         this.isRecordingPaused = false;
+
+        // Le mode edition n'est visible que via le parametre d'URL ?mode=1
+        const urlParams = new URLSearchParams(window.location.search);
+        this.developerMode = urlParams.get("mode") === "1";
+
+        this.modeSelector.classList.toggle(
+            "developerHidden",
+            !this.developerMode
+        );
+
+        this.modeInfo.classList.toggle(
+            "developerHidden",
+            !this.developerMode
+        );
 
         this.setAppMode("play");
 
