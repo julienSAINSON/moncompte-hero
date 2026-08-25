@@ -269,6 +269,7 @@ class BattleGame {
 
         this.field = document.getElementById("battlefield");
         this.divider = document.getElementById("battleDivider");
+        this.dividerFill = document.getElementById("battleDividerFill");
 
         this.top = new BattlePlayer(document.getElementById("battleTop"));
         this.bottom = new BattlePlayer(document.getElementById("battleBottom"));
@@ -511,6 +512,7 @@ class BattleGame {
     resetDivider() {
 
         this.divider.style.top = "50%";
+        this.dividerFill.style.width = "0%";
 
     }
 
@@ -529,6 +531,7 @@ class BattleGame {
         this.bottom.checkMisses(currentTime);
 
         this.updateDivider();
+        this.updateProgress(currentTime);
 
         if (!this.running) {
             return;
@@ -536,6 +539,21 @@ class BattleGame {
 
         this.animationFrame =
             requestAnimationFrame(() => this.loop());
+
+    }
+
+    updateProgress(currentTime) {
+
+        const duration = audioManager.getDuration();
+
+        if (duration <= 0) {
+            this.dividerFill.style.width = "0%";
+            return;
+        }
+
+        const percent = Math.max(0, Math.min(100, (currentTime / duration) * 100));
+
+        this.dividerFill.style.width = percent + "%";
 
     }
 

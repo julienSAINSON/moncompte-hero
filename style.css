@@ -526,17 +526,24 @@ body {
     height: 10px;
     margin-top: -5px;
 
-    background: repeating-linear-gradient(
-        90deg,
-        #fff 0 20px,
-        #333 20px 40px
-    );
+    background: #333;
+    overflow: hidden;
 
     box-shadow: 0 0 12px rgba(255, 255, 255, .6);
 
     z-index: 6;
 
     transition: top .15s ease-out;
+}
+
+#battleDividerFill {
+
+    width: 0%;
+    height: 100%;
+
+    background: #00ff88;
+
+    transition: width .05s linear;
 }
 
 /* ==========================
