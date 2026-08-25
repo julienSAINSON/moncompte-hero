@@ -65,7 +65,13 @@ class Game {
 
         this.restartButton.addEventListener(
             "click",
-            () => this.restart()
+            () => {
+                if (this.battleMode) {
+                    this.restartBattle();
+                    return;
+                }
+                this.restart();
+            }
         );
 
         this.recordButton =
@@ -120,6 +126,9 @@ class Game {
         const urlParams = new URLSearchParams(window.location.search);
         this.developerMode = urlParams.get("mode") === "1";
 
+        // Le mode bataille (2 joueurs) se lance via le parametre d'URL ?mode=2
+        this.battleMode = urlParams.get("mode") === "2";
+
         this.modeSelector.classList.toggle(
             "developerHidden",
             !this.developerMode
@@ -129,6 +138,12 @@ class Game {
             "developerHidden",
             !this.developerMode
         );
+
+        if (this.battleMode) {
+            this.playButton.textContent = "Start (Bataille)";
+            document.getElementById("shareScoreButton")
+                .classList.add("hidden");
+        }
 
         this.setAppMode("play");
 
@@ -176,6 +191,11 @@ class Game {
 
     async start() {
 
+        if (this.battleMode) {
+            this.startBattle();
+            return;
+        }
+
         if (this.running) {
             return;
         }
@@ -184,10 +204,15 @@ class Game {
 
         this.resetRunState();
 
-        const chartLoaded =
+        let chartLoaded =
             await this.prepareChartFromURL(
                 encodeURI(DEFAULT_PLAY_CHART)
             );
+
+        if (!chartLoaded) {
+            // Secours si fetch() echoue (ex: page ouverte en file://)
+            chartLoaded = this.loadDefaultChartData();
+        }
 
         if (!chartLoaded) {
             alert(
@@ -215,6 +240,42 @@ class Game {
 
         this.startCountdown(() => this.startPreRoll());
         this.loop();
+
+    }
+
+    async startBattle() {
+
+        if (battleGame.running) {
+            return;
+        }
+
+        document.getElementById("hud").classList.add("hidden");
+        document.getElementById("game").classList.add("hidden");
+        document.getElementById("progressContainer").classList.add("hidden");
+
+        renderer.hideEndScreen();
+
+        const started = await battleGame.start(
+            encodeURI(DEFAULT_PLAY_CHART),
+            DEFAULT_PLAY_MP3
+        );
+
+        if (!started) {
+            document.getElementById("hud").classList.remove("hidden");
+            document.getElementById("game").classList.remove("hidden");
+            document.getElementById("progressContainer")
+                .classList.remove("hidden");
+        }
+
+    }
+
+    restartBattle() {
+
+        battleGame.reset();
+
+        document.getElementById("battlefield").classList.add("hidden");
+
+        renderer.hideEndScreen();
 
     }
 

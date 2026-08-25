@@ -124,6 +124,63 @@
 
 
     <!-- =========================
+         MODE BATAILLE (2 joueurs)
+    ========================== -->
+
+    <div id="battlefield" class="hidden">
+
+        <div id="battleTop" class="battleHalf">
+
+            <div class="lane" data-lane="0"></div>
+            <div class="lane" data-lane="1"></div>
+            <div class="lane" data-lane="2"></div>
+            <div class="lane" data-lane="3"></div>
+
+            <div class="battleHud">
+                <span class="battleScore">Score : 0</span>
+                <span class="battleCombo">Combo : 0</span>
+            </div>
+
+            <div class="battleHitLine"></div>
+
+            <div class="battleKeyGuide" aria-label="Touches joueur 2">
+                <span class="keyHint lane0">U</span>
+                <span class="keyHint lane1">I</span>
+                <span class="keyHint lane2">O</span>
+                <span class="keyHint lane3">P</span>
+            </div>
+
+        </div>
+
+        <div id="battleDivider"></div>
+
+        <div id="battleBottom" class="battleHalf">
+
+            <div class="lane" data-lane="0"></div>
+            <div class="lane" data-lane="1"></div>
+            <div class="lane" data-lane="2"></div>
+            <div class="lane" data-lane="3"></div>
+
+            <div class="battleHud">
+                <span class="battleScore">Score : 0</span>
+                <span class="battleCombo">Combo : 0</span>
+            </div>
+
+            <div class="battleHitLine"></div>
+
+            <div class="battleKeyGuide" aria-label="Touches joueur 1">
+                <span class="keyHint lane0">A</span>
+                <span class="keyHint lane1">S</span>
+                <span class="keyHint lane2">D</span>
+                <span class="keyHint lane3">F</span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
          FIN
     ========================== -->
 
@@ -152,12 +209,14 @@
          JS
     ========================== -->
 
+    <script src="assets/default/partition.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/chart.js"></script>
     <script src="js/note.js"></script>
     <script src="js/score.js"></script>
     <script src="js/input.js"></script>
     <script src="js/renderer.js"></script>
+    <script src="js/battle.js"></script>
     <script src="js/game.js"></script>
     <script>
         if ("serviceWorker" in navigator) {

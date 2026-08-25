@@ -39,6 +39,11 @@ class AudioManager {
 
         this.audio.addEventListener("ended", () => {
 
+            if (window.battleGame && window.battleGame.running) {
+                window.battleGame.endBySongFinished();
+                return;
+            }
+
             if (window.game) {
                 window.game.onSongFinished();
             }
