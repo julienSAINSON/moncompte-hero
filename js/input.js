@@ -94,6 +94,7 @@ class InputManager {
             return;
         }
 
+        // relachement clavier : pas de glissement possible, requireExactLane reste false
         window.game.releaseLane(this.keyMap[key]);
 
     }
@@ -198,7 +199,8 @@ class InputManager {
     onLaneRelease(startLane, endLane = startLane) {
 
         if (window.game) {
-            window.game.releaseLane(startLane, endLane);
+            // relachement tactile : la colonne d'arrivee reelle est exigee (glissement possible)
+            window.game.releaseLane(startLane, endLane, true);
         }
 
     }
@@ -210,7 +212,7 @@ class InputManager {
         }
 
         for (const { startLane, currentLane } of this.pressedPointers.values()) {
-            window.game?.releaseLane(startLane, currentLane);
+            window.game?.releaseLane(startLane, currentLane, true);
         }
 
         this.pressedKeys.clear();

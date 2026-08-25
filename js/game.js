@@ -790,7 +790,7 @@ renderer.showJudgement(judgement);
 
     }
 
-    releaseLane(lane, endLane = lane) {
+    releaseLane(lane, endLane = lane, requireExactLane = false) {
 
         if (this.mode === "record") {
             if (!this.running || this.isRecordingPaused) {
@@ -809,8 +809,11 @@ renderer.showJudgement(judgement);
             return;
         }
 
+        // au clavier (pas de glissement possible), la diagonale reste cosmetique :
+        // on valide avec la touche de depart. Au tactile, la colonne d'arrivee reelle est exigee.
         const heldNote = this.notes.find((note) =>
-            note.toLane === endLane && note.holding && !note.judged
+            note.holding && !note.judged &&
+            (requireExactLane ? note.toLane === endLane : note.lane === lane)
         );
 
         if (!heldNote) {

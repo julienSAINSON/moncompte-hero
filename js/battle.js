@@ -245,10 +245,13 @@ class BattlePlayer {
 
     }
 
-    release(lane, currentTime) {
+    release(lane, currentTime, requireExactLane = false) {
 
+        // au clavier (pas de glissement possible), la diagonale reste cosmetique :
+        // on valide avec la touche de depart. Au tactile, la colonne d'arrivee reelle est exigee.
         const heldNote = this.notes.find((note) =>
-            note.toLane === lane && note.holding && !note.judged
+            note.holding && !note.judged &&
+            (requireExactLane ? note.toLane === lane : note.lane === lane)
         );
 
         if (!heldNote) {
@@ -429,7 +432,7 @@ class BattleGame {
                 currentLaneByPointer.delete(event.pointerId);
 
                 event.preventDefault();
-                player.release(releaseLane, this.getGameTime());
+                player.release(releaseLane, this.getGameTime(), true);
 
             };
 
