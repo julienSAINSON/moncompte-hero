@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonCompteHero - Tests unitaires</title>
+    <style>
+        body {
+            font-family: Segoe UI, sans-serif;
+            margin: 20px;
+            background: #111;
+            color: #eee;
+        }
+
+        #test-summary {
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+
+        .test-row {
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+        }
+
+        .test-row.pass {
+            background: rgba(0, 170, 80, 0.2);
+            border: 1px solid rgba(0, 170, 80, 0.65);
+        }
+
+        .test-row.fail {
+            background: rgba(200, 30, 30, 0.2);
+            border: 1px solid rgba(230, 60, 60, 0.65);
+        }
+    </style>
+</head>
+<body>
+    <h1>Tests unitaires MonCompteHero</h1>
+    <div id="test-summary">En attente...</div>
+    <div id="test-report"></div>
+
+    <script src="test-runner.js"></script>
+    <script src="bootstrap.js"></script>
+    <script src="../js/note.js"></script>
+    <script src="../js/battle.js"></script>
+    <script src="../js/arena.js"></script>
+    <script src="../js/leaderboard.js"></script>
+    <script src="../js/song-menu.js"></script>
+    <script src="../js/recording.js"></script>
+    <script src="note.test.js"></script>
+    <script src="battle.test.js"></script>
+    <script src="arena.test.js"></script>
+    <script src="supabase.test.js"></script>
+    <script src="song-menu.test.js"></script>
+    <script src="recording.test.js"></script>
+    <script>
+        window.addEventListener("load", () => {
+            runTests();
+        });
+    </script>
+</body>
+</html>
