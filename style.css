@@ -881,6 +881,26 @@ body {
     filter: brightness(1.35);
 }
 
+.battleTrapNote {
+    background: #fff8a6 !important;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 10px #ffffff, 0 0 24px #ffe600, 0 0 42px #ff8c00;
+    animation: battleTrapGlow .45s ease-in-out infinite alternate;
+}
+
+.battleVisibilityBonus {
+    box-shadow: inset 0 0 45px rgba(0, 255, 170, 0.55);
+}
+
+.battleVisibilityPenalty {
+    box-shadow: inset 0 0 45px rgba(255, 184, 0, 0.5);
+}
+
+@keyframes battleTrapGlow {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.7); }
+}
+
 /* ==========================
    BARRE DE PROGRESSION
 ========================== */

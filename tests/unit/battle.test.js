@@ -45,6 +45,40 @@ test("Battle bloque le menu contextuel sur les lanes pendant une partie", functi
     battleGame.running = false;
 });
 
+test("Battle note brillante donne un bonus de visibilite au joueur en difficulte", function () {
+    const player = battleGame.bottom;
+    const opponent = battleGame.top;
+    player.reset();
+    opponent.reset();
+    player.addTrapNote(1);
+
+    const trap = player.trapNotes[0];
+    const initialLeadTime = player.getVisibleLeadTime(1);
+    const initialOpponentLeadTime = opponent.getVisibleLeadTime(1);
+
+    player.press(trap.lane, trap.hitTime);
+
+    assert.ok(player.getVisibleLeadTime(1) > initialLeadTime);
+    assert.ok(opponent.getVisibleLeadTime(1) < initialOpponentLeadTime);
+    assert.equal(player.trapNotes.length, 0);
+    player.reset();
+    opponent.reset();
+});
+
+test("Battle bonus requiert une visibilite inferieure ou egale a 30%", function () {
+    const limit = renderer.lookaheadSeconds * 0.3;
+
+    battleGame.top.previewSeconds = limit + 0.01;
+    battleGame.bottom.previewSeconds = renderer.lookaheadSeconds;
+
+    assert.equal(battleGame.isBonusEligible(battleGame.top), false);
+
+    battleGame.top.previewSeconds = limit;
+    assert.equal(battleGame.isBonusEligible(battleGame.top), true);
+
+    battleGame.top.reset();
+});
+
 test("Battle divider suit l'ecart de score entre joueurs", function () {
     battleGame.top.reset();
     battleGame.bottom.reset();

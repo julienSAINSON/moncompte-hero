@@ -4,12 +4,20 @@
 
 const BATTLE_HIT_WINDOW = 0.10;
 const BATTLE_HOLD_START_WINDOW = 0.15;
+const BATTLE_HIT_LINE_MARGIN = 100;
 const BATTLE_MIN_HALF_HEIGHT = 170;
 const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: -3 };
 const BATTLE_SCORE_PER_BALANCE = 120;
 const BATTLE_SCORE_PER_COMBO = 40;
 const BATTLE_LANE_COLORS = ["#ff5555", "#ffaa00", "#33cc66", "#3399ff"];
 const BATTLE_STATUS_UPDATE_INTERVAL = 50;
+const BATTLE_TRAP_LEAD_TIME = 1.2;
+const BATTLE_BONUS_VISIBILITY_GAIN = 1.2;
+const BATTLE_BONUS_OPPONENT_PENALTY = 0.4;
+const BATTLE_BONUS_DURATION = 2500;
+const BATTLE_TRAP_CHECK_INTERVAL = 1000;
+const BATTLE_TRAP_COOLDOWN = 7000;
+const BATTLE_BONUS_VISIBILITY_THRESHOLD = 0.3;
 
 function isTouchInputActive() {
     return !!(window.inputManager && window.inputManager.isTouchDevice);
@@ -21,6 +29,7 @@ class BattlePlayer {
 
         this.root = rootEl;
         this.notes = [];
+        this.trapNotes = [];
 
         this.balance = 0;
         this.score = 0;
@@ -34,6 +43,9 @@ class BattlePlayer {
         this.pixelsPerSecond = 0;
         this.laneWidth = 0;
         this.previewSeconds = renderer.lookaheadSeconds;
+        this.visibilityModifierUntil = 0;
+        this.visibilityModifierSeconds = 0;
+        this.onTrapHit = null;
 
         this.updateLayout();
 
@@ -47,7 +59,7 @@ class BattlePlayer {
         if (hitLine) {
             this.hitLineY = hitLine.offsetTop;
         } else {
-            this.hitLineY = this.root.clientHeight - BATTLE_EDGE_MARGIN;
+            this.hitLineY = this.root.clientHeight - BATTLE_HIT_LINE_MARGIN;
         }
 
         this.pixelsPerSecond = keepScrollSpeed && previousPixelsPerSecond > 0
@@ -122,6 +134,50 @@ class BattlePlayer {
 
     }
 
+    getVisibleLeadTime(currentTime) {
+
+        const modifier = performance.now() < this.visibilityModifierUntil
+            ? this.visibilityModifierSeconds
+            : 0;
+
+        return Math.max(0.4, this.previewSeconds + modifier);
+
+    }
+
+    addTrapNote(currentTime) {
+
+        const lane = Math.floor(Math.random() * 4);
+        const hitTime = currentTime + BATTLE_TRAP_LEAD_TIME;
+        const element = document.createElement("div");
+
+        element.className = "note battleTrapNote lane" + lane;
+        this.root.appendChild(element);
+
+        this.trapNotes.push({ lane, hitTime, element });
+
+    }
+
+    applyVisibilityModifier(modifierSeconds, cssClass) {
+
+        this.visibilityModifierUntil =
+            performance.now() + BATTLE_BONUS_DURATION;
+        this.visibilityModifierSeconds = modifierSeconds;
+
+        this.root.classList.remove("battleVisibilityBonus", "battleVisibilityPenalty");
+        this.root.classList.add(cssClass);
+
+        setTimeout(() => {
+            if (performance.now() >= this.visibilityModifierUntil) {
+                this.visibilityModifierSeconds = 0;
+                this.root.classList.remove(
+                    "battleVisibilityBonus",
+                    "battleVisibilityPenalty"
+                );
+            }
+        }, BATTLE_BONUS_DURATION);
+
+    }
+
     clearNotes() {
 
         for (const note of this.notes) {
@@ -151,7 +207,7 @@ class BattlePlayer {
             }
 
             const appearanceLeadTime =
-                this.previewSeconds + note.holdDuration;
+                this.getVisibleLeadTime(currentTime) + note.holdDuration;
 
             if (!note.element) {
                 if (note.hitTime - currentTime > appearanceLeadTime) {
@@ -159,6 +215,10 @@ class BattlePlayer {
                 }
 
                 this.createNoteElement(note);
+            } else if (note.hitTime - currentTime > appearanceLeadTime) {
+                note.element.remove();
+                note.element = null;
+                continue;
             }
 
             const y =
@@ -182,6 +242,21 @@ class BattlePlayer {
 
                 note.element.style.transform = "translateY(" + y + "px)";
 
+            }
+
+        }
+
+        for (let index = this.trapNotes.length - 1; index >= 0; index--) {
+
+            const trap = this.trapNotes[index];
+            const y = this.hitLineY -
+                ((trap.hitTime - currentTime) * this.pixelsPerSecond);
+
+            trap.element.style.transform = "translateY(" + y + "px)";
+
+            if (currentTime > trap.hitTime + BATTLE_HIT_WINDOW) {
+                trap.element.remove();
+                this.trapNotes.splice(index, 1);
             }
 
         }
@@ -255,6 +330,18 @@ class BattlePlayer {
     }
 
     press(lane, currentTime) {
+
+        const trapIndex = this.trapNotes.findIndex((trap) =>
+            trap.lane === lane &&
+            Math.abs(trap.hitTime - currentTime) <= BATTLE_HIT_WINDOW
+        );
+
+        if (trapIndex !== -1) {
+            const [trap] = this.trapNotes.splice(trapIndex, 1);
+            trap.element.remove();
+            this.onTrapHit?.();
+            return;
+        }
 
         let bestNote = null;
         let bestDelta = Infinity;
@@ -406,6 +493,11 @@ class BattlePlayer {
     reset() {
 
         this.clearNotes();
+        this.trapNotes.forEach((trap) => trap.element.remove());
+        this.trapNotes = [];
+        this.visibilityModifierUntil = 0;
+        this.visibilityModifierSeconds = 0;
+        this.root.classList.remove("battleVisibilityBonus", "battleVisibilityPenalty");
         this.balance = 0;
         this.score = 0;
         this.combo = 0;
@@ -432,6 +524,9 @@ class BattleGame {
         this.top = new BattlePlayer(document.getElementById("battleTop"));
         this.bottom = new BattlePlayer(document.getElementById("battleBottom"));
 
+        this.top.onTrapHit = () => this.applyVisibilityBonus(this.top, this.bottom);
+        this.bottom.onTrapHit = () => this.applyVisibilityBonus(this.bottom, this.top);
+
         this.topStatus = document.createElement("div");
         this.topStatus.className = "battleStatus battleStatusTop";
         this.field.appendChild(this.topStatus);
@@ -454,6 +549,8 @@ class BattleGame {
         this.lastStatusUpdateAt = 0;
         this.lastDividerY = null;
         this.scrollPixelsPerSecond = 0;
+        this.lastTrapCheckAt = 0;
+        this.lastTrapAt = 0;
 
         this.bindInputs();
 
@@ -805,6 +902,8 @@ class BattleGame {
         this.top.updateNotes(currentTime);
         this.bottom.updateNotes(currentTime);
 
+        this.maybeAddTrapNote(currentTime);
+
         this.top.checkMisses(currentTime);
         this.bottom.checkMisses(currentTime);
 
@@ -888,6 +987,50 @@ class BattleGame {
         } else if (shift <= -this.maxShift) {
             this.endByLineReached("top");
         }
+
+    }
+
+    maybeAddTrapNote(currentTime) {
+
+        const now = performance.now();
+
+        if (
+            now - this.lastTrapCheckAt < BATTLE_TRAP_CHECK_INTERVAL ||
+            now - this.lastTrapAt < BATTLE_TRAP_COOLDOWN
+        ) {
+            return;
+        }
+
+        this.lastTrapCheckAt = now;
+
+        const disadvantaged = [this.top, this.bottom].find((player) =>
+            this.isBonusEligible(player)
+        );
+
+        if (disadvantaged && Math.random() < 0.25) {
+            disadvantaged.addTrapNote(currentTime);
+            this.lastTrapAt = now;
+        }
+
+    }
+
+    isBonusEligible(player) {
+
+        return player.previewSeconds <=
+            renderer.lookaheadSeconds * BATTLE_BONUS_VISIBILITY_THRESHOLD;
+
+    }
+
+    applyVisibilityBonus(player, opponent) {
+
+        player.applyVisibilityModifier(
+            BATTLE_BONUS_VISIBILITY_GAIN,
+            "battleVisibilityBonus"
+        );
+        opponent.applyVisibilityModifier(
+            -BATTLE_BONUS_OPPONENT_PENALTY,
+            "battleVisibilityPenalty"
+        );
 
     }
 
