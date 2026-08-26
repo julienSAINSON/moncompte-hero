@@ -170,6 +170,9 @@ class Game {
         // Le mode bataille (2 joueurs) se lance via le parametre d'URL ?mode=2
         this.battleMode = urlParams.get("mode") === "2";
 
+        document.getElementById("battleBonusControls")
+            .classList.toggle("hidden", !this.battleMode);
+
         // Le mode Battle Arena (salle multijoueur en ligne) se lance via ?mode=3&room=XXX
         this.arenaMode =
             urlParams.get("mode") === "3" && arenaManager.isActive();

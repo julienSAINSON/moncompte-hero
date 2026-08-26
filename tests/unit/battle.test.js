@@ -9,7 +9,7 @@ test("BattlePlayer perfect augmente combo/balance/score", function () {
     assert.equal(player.score, 400);
 });
 
-test("BattlePlayer miss reset combo et met a jour le score derive", function () {
+test("BattlePlayer miss reset combo sans retirer score ni balance", function () {
     const player = battleGame.bottom;
     player.reset();
 
@@ -17,8 +17,31 @@ test("BattlePlayer miss reset combo et met a jour le score derive", function () 
     player.registerJudgement("miss", 1);
 
     assert.equal(player.combo, 0);
-    assert.equal(player.balance, -1);
-    assert.equal(player.score, -120);
+    assert.equal(player.balance, 2);
+    assert.equal(player.score, 280);
+});
+
+test("Battle sans frappe conserve un score nul", function () {
+    const player = battleGame.bottom;
+    player.reset();
+
+    player.registerJudgement("miss", 0);
+    player.registerJudgement("miss", 1);
+    player.registerJudgement("miss", 2);
+
+    assert.equal(player.score, 0);
+    assert.equal(player.balance, 0);
+});
+
+test("Battle la barre bouge quand un seul joueur reussit une note", function () {
+    battleGame.top.reset();
+    battleGame.bottom.reset();
+
+    battleGame.top.registerJudgement("perfect", 0);
+    battleGame.bottom.registerJudgement("miss", 0);
+    battleGame.updateDivider();
+
+    assert.ok(parseFloat(battleGame.divider.style.top) > battleGame.centerY);
 });
 
 test("Battle ne cree les notes que lorsqu'elles deviennent visibles", function () {
@@ -50,6 +73,9 @@ test("Battle note brillante donne un bonus de visibilite au joueur en difficulte
     const opponent = battleGame.top;
     player.reset();
     opponent.reset();
+    opponent.balance = 20;
+    battleGame.updateDivider();
+    const dividerBeforeBonus = parseFloat(battleGame.divider.style.top);
     player.addTrapNote(1);
 
     const trap = player.trapNotes[0];
@@ -60,31 +86,93 @@ test("Battle note brillante donne un bonus de visibilite au joueur en difficulte
 
     assert.ok(player.getVisibleLeadTime(1) > initialLeadTime);
     assert.ok(opponent.getVisibleLeadTime(1) < initialOpponentLeadTime);
+    assert.ok(
+        parseFloat(battleGame.divider.style.top) < dividerBeforeBonus,
+        "Le bonus doit ramener la barre vers le joueur en difficulte"
+    );
+    assert.equal(player.balance, 0);
+    assert.equal(player.bonusBalanceModifier, 15);
+    assert.equal(opponent.bonusBalanceModifier, -15);
     assert.equal(player.trapNotes.length, 0);
     player.reset();
     opponent.reset();
 });
 
-test("Battle bonus requiert une visibilite inferieure ou egale a 30%", function () {
-    const limit = renderer.lookaheadSeconds * 0.3;
+test("Battle bonus requiert 30% de zone visible ou la limite tactile", function () {
+    battleGame.updateLayoutCache();
+    const ineligibleHeight = Math.ceil(
+        battleGame.fieldHeight * BATTLE_BONUS_VISIBILITY_THRESHOLD + 1
+    );
+    const eligibleHeight = Math.floor(
+        battleGame.fieldHeight * BATTLE_BONUS_VISIBILITY_THRESHOLD
+    );
 
-    battleGame.top.previewSeconds = limit + 0.01;
-    battleGame.bottom.previewSeconds = renderer.lookaheadSeconds;
+    battleGame.top.root.style.flexBasis = ineligibleHeight + "px";
 
     assert.equal(battleGame.isBonusEligible(battleGame.top), false);
 
-    battleGame.top.previewSeconds = limit;
+    battleGame.top.root.style.flexBasis = eligibleHeight + "px";
     assert.equal(battleGame.isBonusEligible(battleGame.top), true);
 
+    battleGame.top.root.style.flexBasis = "";
     battleGame.top.reset();
+});
+
+test("Battle cree le bonus immediatement a l'atteinte du seuil", function () {
+    battleGame.updateLayoutCache();
+    battleGame.top.reset();
+    battleGame.top.root.style.flexBasis = Math.floor(
+        battleGame.fieldHeight * BATTLE_BONUS_VISIBILITY_THRESHOLD
+    ) + "px";
+    battleGame.lastTrapAt = null;
+    battleGame.bonusBalanceUntil = 0;
+
+    battleGame.maybeAddTrapNote(1);
+
+    assert.equal(battleGame.top.trapNotes.length, 1);
+    battleGame.top.root.style.flexBasis = "";
+    battleGame.top.reset();
+});
+
+test("Battle bloque tout nouveau bonus pendant un effet actif", function () {
+    battleGame.updateLayoutCache();
+    battleGame.top.reset();
+    battleGame.bottom.reset();
+    battleGame.top.root.style.flexBasis = "190px";
+    battleGame.lastTrapAt = null;
+    battleGame.bonusBalanceUntil = performance.now() + 1000;
+
+    battleGame.maybeAddTrapNote(1);
+
+    assert.equal(battleGame.top.trapNotes.length, 0);
+    battleGame.top.root.style.flexBasis = "";
+    battleGame.bonusBalanceUntil = 0;
+    battleGame.top.reset();
+});
+
+test("Battle desactive retire les notes et effets bonus en cours", function () {
+    const player = battleGame.bottom;
+    player.addTrapNote(1);
+    player.applyVisibilityModifier(1, "battleVisibilityBonus");
+    player.bonusBalanceModifier = 15;
+    battleGame.bonusBalanceUntil = performance.now() + 1000;
+
+    battleGame.setBonusEnabled(false);
+
+    assert.equal(player.trapNotes.length, 0);
+    assert.equal(player.visibilityModifierSeconds, 0);
+    assert.equal(player.bonusBalanceModifier, 0);
+    assert.equal(battleGame.bonusEnabled, false);
+    battleGame.setBonusEnabled(true);
+    player.reset();
 });
 
 test("Battle divider suit l'ecart de score entre joueurs", function () {
     battleGame.top.reset();
     battleGame.bottom.reset();
 
-    battleGame.top.score = 1200;
-    battleGame.bottom.score = 0;
+    battleGame.top.balance = 10;
+    battleGame.bottom.balance = 0;
 
     battleGame.updateDivider();
 
@@ -93,8 +181,8 @@ test("Battle divider suit l'ecart de score entre joueurs", function () {
 });
 
 test("Battle conserve la vitesse de defilement pour les deux joueurs", function () {
-    battleGame.top.score = 1200;
-    battleGame.bottom.score = 0;
+    battleGame.top.balance = 10;
+    battleGame.bottom.balance = 0;
 
     battleGame.updateDivider();
 
@@ -105,8 +193,8 @@ test("Battle conserve la vitesse de defilement pour les deux joueurs", function 
 });
 
 test("Battle agrandit la zone du joueur qui pousse la barre", function () {
-    battleGame.top.score = 1200;
-    battleGame.bottom.score = 0;
+    battleGame.top.balance = 10;
+    battleGame.bottom.balance = 0;
 
     battleGame.updateDivider();
 

@@ -424,6 +424,21 @@ body {
     cursor: pointer;
 }
 
+.battleBonusControls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.battleBonusControls input {
+    width: 18px;
+    height: 18px;
+    accent-color: #00ff88;
+}
+
 #songListOverlay {
 
     position: fixed;

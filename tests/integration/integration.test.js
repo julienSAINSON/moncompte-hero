@@ -60,6 +60,8 @@ test("Integration mode 2: start declenche startBattle avec la chanson selectionn
     try {
         const cw = frame.contentWindow;
         const doc = frame.contentDocument;
+        const bonusControls = doc.getElementById("battleBonusControls");
+        const bonusToggle = doc.getElementById("battleBonusToggle");
 
         let called = null;
 
@@ -85,6 +87,11 @@ test("Integration mode 2: start declenche startBattle avec la chanson selectionn
         assert.ok(isHidden(doc.getElementById("hud")), "HUD doit etre masque en battle");
         assert.ok(isHidden(doc.getElementById("game")), "Zone solo doit etre masquee en battle");
         assert.ok(isHidden(doc.getElementById("progressContainer")), "Progress solo doit etre massee en battle");
+        assert.ok(!isHidden(bonusControls), "Case Notes bonus doit etre visible en battle");
+
+        bonusToggle.checked = false;
+        bonusToggle.dispatchEvent(new Event("change"));
+        assert.equal(cw.battleGame.bonusEnabled, false);
     } finally {
         cleanupGameFrame(frame);
     }

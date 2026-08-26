@@ -6,18 +6,19 @@ const BATTLE_HIT_WINDOW = 0.10;
 const BATTLE_HOLD_START_WINDOW = 0.15;
 const BATTLE_HIT_LINE_MARGIN = 100;
 const BATTLE_MIN_HALF_HEIGHT = 170;
-const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: -3 };
+const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: 0 };
 const BATTLE_SCORE_PER_BALANCE = 120;
 const BATTLE_SCORE_PER_COMBO = 40;
 const BATTLE_LANE_COLORS = ["#ff5555", "#ffaa00", "#33cc66", "#3399ff"];
 const BATTLE_STATUS_UPDATE_INTERVAL = 50;
 const BATTLE_TRAP_LEAD_TIME = 1.2;
-const BATTLE_BONUS_VISIBILITY_GAIN = 1.2;
-const BATTLE_BONUS_OPPONENT_PENALTY = 0.4;
-const BATTLE_BONUS_DURATION = 2500;
-const BATTLE_TRAP_CHECK_INTERVAL = 1000;
+const BATTLE_BONUS_VISIBILITY_GAIN = 4;
+const BATTLE_BONUS_OPPONENT_PENALTY = 1.25;
+const BATTLE_BONUS_DURATION = 5000;
+const BATTLE_BONUS_BALANCE_SWING = 15;
 const BATTLE_TRAP_COOLDOWN = 7000;
-const BATTLE_BONUS_VISIBILITY_THRESHOLD = 0.3;
+const BATTLE_BONUS_VISIBILITY_THRESHOLD = 0.4;
+const BATTLE_BONUS_MINIMUM_AREA_BUFFER = 20;
 
 function isTouchInputActive() {
     return !!(window.inputManager && window.inputManager.isTouchDevice);
@@ -32,6 +33,7 @@ class BattlePlayer {
         this.trapNotes = [];
 
         this.balance = 0;
+        this.bonusBalanceModifier = 0;
         this.score = 0;
         this.combo = 0;
 
@@ -422,10 +424,11 @@ class BattlePlayer {
 
         this.balance += BATTLE_POINTS[judgement];
 
-        // Score battle derive directement de la metrique qui pilote la barre.
-        this.score =
-            this.balance * BATTLE_SCORE_PER_BALANCE +
-            this.combo * BATTLE_SCORE_PER_COMBO;
+        if (judgement !== "miss") {
+            this.score +=
+                BATTLE_POINTS[judgement] * BATTLE_SCORE_PER_BALANCE +
+                BATTLE_SCORE_PER_COMBO;
+        }
 
         this.updateHUD();
         this.showHitLineEffect(judgement);
@@ -499,6 +502,7 @@ class BattlePlayer {
         this.visibilityModifierSeconds = 0;
         this.root.classList.remove("battleVisibilityBonus", "battleVisibilityPenalty");
         this.balance = 0;
+        this.bonusBalanceModifier = 0;
         this.score = 0;
         this.combo = 0;
         this.updateHUD();
@@ -549,8 +553,17 @@ class BattleGame {
         this.lastStatusUpdateAt = 0;
         this.lastDividerY = null;
         this.scrollPixelsPerSecond = 0;
-        this.lastTrapCheckAt = 0;
-        this.lastTrapAt = 0;
+        this.lastTrapAt = null;
+        this.bonusBalanceUntil = 0;
+        this.bonusEnabled = true;
+
+        const bonusToggle = document.getElementById("battleBonusToggle");
+        if (bonusToggle) {
+            this.bonusEnabled = bonusToggle.checked;
+            bonusToggle.addEventListener("change", () => {
+                this.setBonusEnabled(bonusToggle.checked);
+            });
+        }
 
         this.bindInputs();
 
@@ -867,6 +880,7 @@ class BattleGame {
         this.bottom.root.style.flex = "";
         this.lastDividerY = null;
         this.scrollPixelsPerSecond = 0;
+        this.bonusBalanceUntil = 0;
 
         this.divider.classList.remove("hidden");
         this.topStatus.classList.remove("hidden");
@@ -992,22 +1006,28 @@ class BattleGame {
 
     maybeAddTrapNote(currentTime) {
 
+        if (!this.bonusEnabled) {
+            return;
+        }
+
         const now = performance.now();
 
+        if (now < this.bonusBalanceUntil) {
+            return;
+        }
+
         if (
-            now - this.lastTrapCheckAt < BATTLE_TRAP_CHECK_INTERVAL ||
+            this.lastTrapAt !== null &&
             now - this.lastTrapAt < BATTLE_TRAP_COOLDOWN
         ) {
             return;
         }
 
-        this.lastTrapCheckAt = now;
-
         const disadvantaged = [this.top, this.bottom].find((player) =>
             this.isBonusEligible(player)
         );
 
-        if (disadvantaged && Math.random() < 0.25) {
+        if (disadvantaged) {
             disadvantaged.addTrapNote(currentTime);
             this.lastTrapAt = now;
         }
@@ -1016,8 +1036,14 @@ class BattleGame {
 
     isBonusEligible(player) {
 
-        return player.previewSeconds <=
-            renderer.lookaheadSeconds * BATTLE_BONUS_VISIBILITY_THRESHOLD;
+        const visibleHeight = parseFloat(player.root.style.flexBasis) ||
+            player.root.clientHeight;
+        const visibilityRatio = visibleHeight / this.fieldHeight;
+        const nearMinimumArea = visibleHeight <=
+            BATTLE_MIN_HALF_HEIGHT + BATTLE_BONUS_MINIMUM_AREA_BUFFER;
+
+        return visibilityRatio <= BATTLE_BONUS_VISIBILITY_THRESHOLD ||
+            nearMinimumArea;
 
     }
 
@@ -1031,6 +1057,47 @@ class BattleGame {
             -BATTLE_BONUS_OPPONENT_PENALTY,
             "battleVisibilityPenalty"
         );
+
+        player.bonusBalanceModifier = BATTLE_BONUS_BALANCE_SWING;
+        opponent.bonusBalanceModifier = -BATTLE_BONUS_BALANCE_SWING;
+        this.updateDivider();
+
+        this.bonusBalanceUntil = performance.now() + BATTLE_BONUS_DURATION;
+
+        setTimeout(() => {
+            if (performance.now() < this.bonusBalanceUntil) {
+                return;
+            }
+
+            this.top.bonusBalanceModifier = 0;
+            this.bottom.bonusBalanceModifier = 0;
+            this.updateDivider();
+        }, BATTLE_BONUS_DURATION);
+
+    }
+
+    setBonusEnabled(enabled) {
+
+        this.bonusEnabled = enabled;
+
+        if (enabled) {
+            return;
+        }
+
+        [this.top, this.bottom].forEach((player) => {
+            player.trapNotes.forEach((trap) => trap.element.remove());
+            player.trapNotes = [];
+            player.visibilityModifierUntil = 0;
+            player.visibilityModifierSeconds = 0;
+            player.bonusBalanceModifier = 0;
+            player.root.classList.remove(
+                "battleVisibilityBonus",
+                "battleVisibilityPenalty"
+            );
+        });
+
+        this.bonusBalanceUntil = 0;
+        this.updateDivider();
 
     }
 
@@ -1071,7 +1138,8 @@ class BattleGame {
 
     getPlayerPressure(player) {
 
-        return player.score;
+        return (player.balance + player.bonusBalanceModifier) *
+            BATTLE_SCORE_PER_BALANCE;
 
     }
 
