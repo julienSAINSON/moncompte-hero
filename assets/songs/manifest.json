@@ -1,0 +1,16 @@
+[
+    {
+        "id": "saisis-ton-sciforma",
+        "title": "Saisis ton Sciforma",
+        "folder": "assets/songs/saisis-ton-sciforma",
+        "music": "music.mp3",
+        "chart": "chart.json"
+    },
+    {
+        "id": "horloge-tourne",
+        "title": "L'Horloge Tourne",
+        "folder": "assets/songs/horloge-tourne",
+        "music": "music.mp3",
+        "chart": "chart.json"
+    }
+]

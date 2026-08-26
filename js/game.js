@@ -34,6 +34,24 @@ class Game {
         this.playButton =
             document.getElementById("playButton");
 
+        this.menuButton =
+            document.getElementById("menuButton");
+
+        this.songListOverlay =
+            document.getElementById("songListOverlay");
+
+        this.songListEl =
+            document.getElementById("songList");
+
+        this.closeSongListButton =
+            document.getElementById("closeSongListButton");
+
+        this.selectedSongInfo =
+            document.getElementById("selectedSongInfo");
+
+        this.selectedSong = null;
+        this.songs = [];
+
         this.modeSelector =
             document.getElementById("modeSelector");
 
@@ -61,6 +79,16 @@ class Game {
         this.playButton.addEventListener(
             "click",
             () => this.start()
+        );
+
+        this.menuButton.addEventListener(
+            "click",
+            () => this.openSongList()
+        );
+
+        this.closeSongListButton.addEventListener(
+            "click",
+            () => this.closeSongList()
         );
 
         this.restartButton.addEventListener(
@@ -170,18 +198,116 @@ class Game {
             isPlayMode
         );
 
-        this.playButton.classList.toggle(
-            "hidden",
-            !isPlayMode
-        );
-
         this.updateRecordingControls();
 
         this.modeInfo.textContent = isPlayMode
             ? "Mode Play : chargement automatique des fichiers par defaut."
             : "Mode Edition : choisis un MP3 puis appuie sur Demarrer l'edition pour generer le JSON.";
 
+        this.updatePlaySelectionUI();
+
         this.restart();
+
+    }
+
+    //--------------------------------------------------
+    // Selection d'une musique (menu)
+    //--------------------------------------------------
+
+    updatePlaySelectionUI() {
+
+        if (!this.battleMode && this.appMode !== "play") {
+            this.menuButton.classList.add("hidden");
+            this.playButton.classList.add("hidden");
+            this.selectedSongInfo.classList.add("hidden");
+            return;
+        }
+
+        const hasSong = !!this.selectedSong;
+
+        this.menuButton.classList.toggle("hidden", hasSong);
+        this.playButton.classList.toggle("hidden", !hasSong);
+        this.selectedSongInfo.classList.toggle("hidden", !hasSong);
+
+    }
+
+    async openSongList() {
+
+        if (this.songs.length === 0) {
+
+            try {
+
+                const response = await fetch(
+                    "assets/songs/manifest.json",
+                    { cache: "no-store" }
+                );
+
+                this.songs = response.ok ? await response.json() : [];
+
+            } catch (error) {
+
+                console.error(error);
+                this.songs = [];
+
+            }
+
+        }
+
+        if (this.songs.length === 0) {
+            alert("Aucune musique disponible dans assets/songs/manifest.json");
+            return;
+        }
+
+        this.renderSongList();
+        this.songListOverlay.classList.remove("hidden");
+
+    }
+
+    renderSongList() {
+
+        this.songListEl.innerHTML = "";
+
+        for (const song of this.songs) {
+
+            const item = document.createElement("li");
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "songListItem";
+            button.textContent = song.title;
+
+            button.classList.toggle(
+                "selected",
+                this.selectedSong?.id === song.id
+            );
+
+            button.addEventListener(
+                "click",
+                () => this.selectSong(song)
+            );
+
+            item.appendChild(button);
+            this.songListEl.appendChild(item);
+
+        }
+
+    }
+
+    selectSong(song) {
+
+        this.selectedSong = song;
+
+        this.selectedSongInfo.textContent =
+            "Musique selectionnee : " + song.title;
+
+        this.closeSongList();
+        this.updatePlaySelectionUI();
+
+    }
+
+    closeSongList() {
+
+        this.songListOverlay.classList.add("hidden");
 
     }
 
@@ -200,6 +326,10 @@ class Game {
             return;
         }
 
+        if (!this.selectedSong) {
+            return;
+        }
+
         this.mode = "play";
 
         this.resetRunState();
@@ -207,10 +337,14 @@ class Game {
         // masque les notes des leur creation, avant meme la fin du chargement de l'audio
         this.playfield.classList.add("countdown-active");
 
+        const chartPath =
+            encodeURI(this.selectedSong.folder + "/" + this.selectedSong.chart);
+
+        const musicPath =
+            encodeURI(this.selectedSong.folder + "/" + this.selectedSong.music);
+
         let chartLoaded =
-            await this.prepareChartFromURL(
-                encodeURI(DEFAULT_PLAY_CHART)
-            );
+            await this.prepareChartFromURL(chartPath);
 
         if (!chartLoaded) {
             // Secours si fetch() echoue (ex: page ouverte en file://)
@@ -219,22 +353,20 @@ class Game {
 
         if (!chartLoaded) {
             alert(
-                "Impossible de charger la partition par defaut: " +
-                DEFAULT_PLAY_CHART
+                "Impossible de charger la partition selectionnee: " +
+                chartPath
             );
             this.playfield.classList.remove("countdown-active");
             return;
         }
 
         const audioLoaded =
-            await audioManager.loadFromURL(
-                encodeURI(DEFAULT_PLAY_MP3)
-            );
+            await audioManager.loadFromURL(musicPath);
 
         if (!audioLoaded) {
             alert(
-                "Impossible de charger le MP3 par defaut: " +
-                DEFAULT_PLAY_MP3
+                "Impossible de charger le MP3 selectionne: " +
+                musicPath
             );
             this.playfield.classList.remove("countdown-active");
             return;
@@ -254,16 +386,23 @@ class Game {
             return;
         }
 
+        if (!this.selectedSong) {
+            return;
+        }
+
         document.getElementById("hud").classList.add("hidden");
         document.getElementById("game").classList.add("hidden");
         document.getElementById("progressContainer").classList.add("hidden");
 
         renderer.hideEndScreen();
 
-        const started = await battleGame.start(
-            encodeURI(DEFAULT_PLAY_CHART),
-            DEFAULT_PLAY_MP3
-        );
+        const chartPath =
+            encodeURI(this.selectedSong.folder + "/" + this.selectedSong.chart);
+
+        const musicPath =
+            this.selectedSong.folder + "/" + this.selectedSong.music;
+
+        const started = await battleGame.start(chartPath, musicPath);
 
         if (!started) {
             document.getElementById("hud").classList.remove("hidden");
@@ -640,10 +779,6 @@ class Game {
 
             if (note.isMissed(currentTime)) {
 
-                console.log(
-                    "[DEBUG auto-miss]", { lane: note.lane, toLane: note.toLane, holding: note.holding }
-                );
-
                 note.judged = true;
 
                 note.hit = true;
@@ -825,15 +960,6 @@ renderer.showJudgement(judgement);
             (requireExactLane ? note.toLane === endLane : note.lane === lane)
         );
 
-        console.log(
-            "[DEBUG releaseLane]", { lane, endLane, requireExactLane },
-            "holdingNotes:",
-            this.notes
-                .filter((n) => n.holding && !n.judged)
-                .map((n) => ({ lane: n.lane, toLane: n.toLane, releaseTime: n.releaseTime })),
-            "found:", !!heldNote
-        );
-
         if (!heldNote) {
             return;
         }
@@ -842,13 +968,6 @@ renderer.showJudgement(judgement);
         const judgement = heldNote.canBeReleased(currentTime)
             ? heldNote.judge(currentTime)
             : "miss";
-
-        console.log(
-            "[DEBUG judgement]", judgement,
-            "currentTime:", currentTime,
-            "releaseTime:", heldNote.releaseTime,
-            "delta:", (currentTime - heldNote.releaseTime).toFixed(3)
-        );
 
         heldNote.hit = true;
         heldNote.judged = true;

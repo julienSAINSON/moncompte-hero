@@ -1,4 +1,4 @@
-const CACHE_NAME = "openrhythm-v3";
+const CACHE_NAME = "openrhythm-v5";
 const APP_SHELL = [
     "./",
     "index.html",

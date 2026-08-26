@@ -113,8 +113,6 @@ class InputManager {
 
             laneEl.addEventListener("pointerdown", (event) => {
 
-                console.log("[DEBUG pointerdown]", event.pointerType, event.pointerId, lane);
-
                 event.preventDefault();
                 laneEl.setPointerCapture(event.pointerId);
                 this.pressedPointers.set(event.pointerId, {
@@ -146,12 +144,9 @@ class InputManager {
 
             const releasePointer = (event) => {
 
-                console.log("[DEBUG " + event.type + "]", event.pointerType, event.pointerId);
-
                 const pointerState = this.pressedPointers.get(event.pointerId);
 
                 if (!pointerState) {
-                    console.log("[DEBUG] pointerState introuvable pour cet id");
                     return;
                 }
 

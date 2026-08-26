@@ -1,0 +1,86 @@
+{
+    "title": "saisis ton sciforma.mp3",
+    "notes": [
+        {
+            "lane": 2,
+            "hitTime": 1.69
+        },
+        {
+            "lane": 3,
+            "hitTime": 2.063
+        },
+        {
+            "lane": 1,
+            "hitTime": 2.56
+        },
+        {
+            "lane": 2,
+            "hitTime": 2.998
+        },
+        {
+            "lane": 0,
+            "hitTime": 3.531
+        },
+        {
+            "lane": 1,
+            "hitTime": 3.958
+        },
+        {
+            "lane": 2,
+            "hitTime": 4.419
+        },
+        {
+            "lane": 3,
+            "hitTime": 4.893,
+            "holdDuration": 1.834
+        },
+        {
+            "lane": 2,
+            "hitTime": 7.454
+        },
+        {
+            "lane": 1,
+            "hitTime": 8.009
+        },
+        {
+            "lane": 0,
+            "hitTime": 9.013
+        },
+        {
+            "lane": 1,
+            "hitTime": 9.358
+        },
+        {
+            "lane": 2,
+            "hitTime": 9.675
+        },
+        {
+            "lane": 3,
+            "hitTime": 9.963
+        },
+        {
+            "lane": 2,
+            "hitTime": 10.305
+        },
+        {
+            "lane": 1,
+            "hitTime": 10.634
+        },
+        {
+            "lane": 0,
+            "hitTime": 10.966
+        },
+        {
+            "lane": 1,
+            "hitTime": 11.322
+        },
+        {
+            "lane": 2,
+            "hitTime": 11.655
+        },
+        {
+            "lane": 3,
+            "hitTime": 11.975
+        }
+    ]
+}
