@@ -1,4 +1,4 @@
-const CACHE_NAME = "moncompte-hero-v40";
+const CACHE_NAME = "moncompte-hero-v41";
 const APP_SHELL = [
     "./",
     "index.html",
@@ -50,6 +50,16 @@ self.addEventListener("fetch", (event) => {
     }
 
     if (url.pathname.endsWith("/assets/default/partition.json")) {
+        event.respondWith(networkFirst(event.request));
+        return;
+    }
+
+    // En dev, les partitions et le manifest de chansons changent souvent:
+    // on privilegie le reseau pour eviter de rejouer une ancienne version.
+    if (
+        url.pathname.endsWith("/assets/songs/manifest.json") ||
+        /\/assets\/songs\/[^/]+\/chart\.json$/.test(url.pathname)
+    ) {
         event.respondWith(networkFirst(event.request));
         return;
     }

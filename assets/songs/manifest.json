@@ -12,5 +12,12 @@
         "folder": "assets/songs/horloge-tourne",
         "music": "music.mp3",
         "chart": "chart.json"
+    },
+    {
+        "id": "greatest-show",
+        "title": "The Greatest Showman",
+        "folder": "assets/songs/greatest-show",
+        "music": "music.mp3",
+        "chart": "chart.json"
     }
 ]
