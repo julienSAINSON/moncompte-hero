@@ -1,6 +1,6 @@
 {
-    "name": "OpenRhythm",
-    "short_name": "OpenRhythm",
+    "name": "MonCompteHero",
+    "short_name": "MonCompteHero",
     "description": "Jeu de rythme a quatre touches.",
     "lang": "fr",
     "start_url": "./",

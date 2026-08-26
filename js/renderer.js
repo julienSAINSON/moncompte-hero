@@ -157,7 +157,7 @@ showHitEffect(type) {
 
         const score = window.scoreManager;
 
-        return "Mon score OpenRhythm : " + score.score +
+        return "Mon score MonCompteHero : " + score.score +
             " points | Precision : " +
             score.accuracy.toFixed(2) + "% | Meilleur combo : " +
             score.bestCombo;
@@ -171,7 +171,7 @@ showHitEffect(type) {
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: "Mon score OpenRhythm",
+                    title: "Mon score MonCompteHero",
                     text
                 });
                 this.shareStatus.textContent = "Score partage.";

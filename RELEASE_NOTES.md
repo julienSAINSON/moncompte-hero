@@ -1,4 +1,4 @@
-# Release Notes — OpenRhythm
+# Release Notes — MonCompteHero
 
 ## 🎮 Modes de jeu (paramètre d'URL `?mode=`)
 
