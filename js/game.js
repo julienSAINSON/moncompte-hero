@@ -659,6 +659,7 @@ class Game {
         document.getElementById("hud").classList.add("hidden");
         document.getElementById("game").classList.add("hidden");
         document.getElementById("progressContainer").classList.add("hidden");
+        document.getElementById("menu").classList.add("hidden");
 
         renderer.hideEndScreen();
 
@@ -675,6 +676,7 @@ class Game {
             document.getElementById("game").classList.remove("hidden");
             document.getElementById("progressContainer")
                 .classList.remove("hidden");
+            document.getElementById("menu").classList.remove("hidden");
         }
 
     }
@@ -684,6 +686,7 @@ class Game {
         battleGame.reset();
 
         document.getElementById("battlefield").classList.add("hidden");
+        document.getElementById("menu").classList.remove("hidden");
 
         renderer.hideEndScreen();
 

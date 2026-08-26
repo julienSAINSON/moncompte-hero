@@ -766,6 +766,10 @@ class BattleGame {
 
     updateDivider() {
 
+        if (this.fieldHeight <= 0) {
+            this.updateLayoutCache();
+        }
+
         const topPressure = this.getPlayerPressure(this.top);
         const bottomPressure = this.getPlayerPressure(this.bottom);
         const diff = topPressure - bottomPressure;
@@ -779,7 +783,20 @@ class BattleGame {
         this.divider.style.top = (this.centerY + shift) + "px";
 
         const now = performance.now();
-        if (now - this.lastStatusUpdateAt >= BATTLE_STATUS_UPDATE_INTERVAL) {
+        const topText =
+            "J2  Score: " + Math.round(this.top.score) +
+            "  Combo: " + this.top.combo;
+        const bottomText =
+            "J1  Score: " + Math.round(this.bottom.score) +
+            "  Combo: " + this.bottom.combo;
+        const statusChanged =
+            topText !== this.lastTopStatusText ||
+            bottomText !== this.lastBottomStatusText;
+
+        if (
+            statusChanged ||
+            now - this.lastStatusUpdateAt >= BATTLE_STATUS_UPDATE_INTERVAL
+        ) {
             this.lastStatusUpdateAt = now;
             this.updateStatusPanels(this.centerY + shift);
         }
