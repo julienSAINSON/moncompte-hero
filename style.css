@@ -818,6 +818,8 @@ body {
 
     position: absolute;
 
+    will-change: transform;
+
     width: calc(25% - 16px);
     height: 24px;
 
@@ -1125,7 +1127,7 @@ body {
 
     z-index: 6;
 
-    transition: top .15s ease-out;
+    transition: none;
 }
 
 #battleDividerFill {

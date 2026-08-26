@@ -33,14 +33,16 @@ class BattlePlayer {
         this.hitLineY = 0;
         this.pixelsPerSecond = 0;
         this.laneWidth = 0;
+        this.previewSeconds = renderer.lookaheadSeconds;
 
         this.updateLayout();
 
     }
 
-    updateLayout() {
+    updateLayout(keepScrollSpeed = false) {
 
         const hitLine = this.root.querySelector(".battleHitLine");
+        const previousPixelsPerSecond = this.pixelsPerSecond;
 
         if (hitLine) {
             this.hitLineY = hitLine.offsetTop;
@@ -48,8 +50,22 @@ class BattlePlayer {
             this.hitLineY = this.root.clientHeight - BATTLE_EDGE_MARGIN;
         }
 
-        this.pixelsPerSecond = this.hitLineY / renderer.lookaheadSeconds;
+        this.pixelsPerSecond = keepScrollSpeed && previousPixelsPerSecond > 0
+            ? previousPixelsPerSecond
+            : this.hitLineY / renderer.lookaheadSeconds;
+        this.previewSeconds = this.pixelsPerSecond > 0
+            ? this.hitLineY / this.pixelsPerSecond
+            : renderer.lookaheadSeconds;
         this.laneWidth = this.root.clientWidth / 4;
+
+    }
+
+    setScrollSpeed(pixelsPerSecond) {
+
+        this.pixelsPerSecond = pixelsPerSecond;
+        this.previewSeconds = this.pixelsPerSecond > 0
+            ? this.hitLineY / this.pixelsPerSecond
+            : renderer.lookaheadSeconds;
 
     }
 
@@ -58,29 +74,9 @@ class BattlePlayer {
         for (const n of chartNotes) {
 
             const holdDuration = n.holdDuration || 0;
-
-            const element = document.createElement("div");
-            element.className = "note lane" + n.lane;
-
             const toLane = isTouchInputActive()
                 ? ((n.toLane === null || n.toLane === undefined) ? n.lane : n.toLane)
                 : n.lane; // au clavier, la diagonale est ignorable visuellement : hold classique
-
-            if (holdDuration > 0) {
-                element.classList.add(
-                    toLane !== n.lane ? "diagonal-note" : "hold-note"
-                );
-
-                if (toLane !== n.lane) {
-                    // degrade de la couleur de depart vers la couleur d'arrivee
-                    element.style.background =
-                        "linear-gradient(to bottom, " +
-                        BATTLE_LANE_COLORS[toLane] + ", " +
-                        BATTLE_LANE_COLORS[n.lane] + ")";
-                }
-            }
-
-            this.root.appendChild(element);
 
             this.notes.push({
                 lane: n.lane,
@@ -92,17 +88,44 @@ class BattlePlayer {
                 judged: false,
                 hit: false,
                 holding: false,
-                element
+                element: null
             });
 
         }
 
     }
 
+    createNoteElement(note) {
+
+        if (note.element) {
+            return;
+        }
+
+        const element = document.createElement("div");
+        element.className = "note lane" + note.lane;
+
+        if (this.isHoldNote(note)) {
+            element.classList.add(
+                note.toLane !== note.lane ? "diagonal-note" : "hold-note"
+            );
+
+            if (note.toLane !== note.lane) {
+                element.style.background =
+                    "linear-gradient(to bottom, " +
+                    BATTLE_LANE_COLORS[note.toLane] + ", " +
+                    BATTLE_LANE_COLORS[note.lane] + ")";
+            }
+        }
+
+        this.root.appendChild(element);
+        note.element = element;
+
+    }
+
     clearNotes() {
 
         for (const note of this.notes) {
-            note.element.remove();
+            note.element?.remove();
         }
 
         this.notes = [];
@@ -127,6 +150,17 @@ class BattlePlayer {
                 continue;
             }
 
+            const appearanceLeadTime =
+                this.previewSeconds + note.holdDuration;
+
+            if (!note.element) {
+                if (note.hitTime - currentTime > appearanceLeadTime) {
+                    continue;
+                }
+
+                this.createNoteElement(note);
+            }
+
             const y =
                 this.hitLineY -
                 ((note.hitTime - currentTime) * this.pixelsPerSecond);
@@ -140,12 +174,13 @@ class BattlePlayer {
                     this.updateDiagonal(note, y, holdHeight);
                 } else {
                     note.element.style.height = holdHeight + 24 + "px";
-                    note.element.style.top = (y - holdHeight) + "px";
+                    note.element.style.transform =
+                        "translateY(" + (y - holdHeight) + "px)";
                 }
 
             } else {
 
-                note.element.style.top = y + "px";
+                note.element.style.transform = "translateY(" + y + "px)";
 
             }
 
@@ -166,11 +201,12 @@ class BattlePlayer {
             Math.atan2(deltaX, holdHeight) * (180 / Math.PI);
 
         note.element.style.left = (xEnd - thickness / 2) + "px";
-        note.element.style.top = (y - holdHeight) + "px";
         note.element.style.width = thickness + "px";
         note.element.style.height = boxHeight + "px";
         note.element.style.transformOrigin = "top";
-        note.element.style.transform = "skewX(" + skewDeg + "deg)";
+        note.element.style.transform =
+            "translateY(" + (y - holdHeight) + "px) " +
+            "skewX(" + skewDeg + "deg)";
 
     }
 
@@ -193,7 +229,7 @@ class BattlePlayer {
 
                 note.judged = true;
                 note.hit = true;
-                note.element.remove();
+                note.element?.remove();
                 this.registerJudgement("miss", note.lane);
 
             }
@@ -247,6 +283,7 @@ class BattlePlayer {
         }
 
         if (this.isHoldNote(bestNote)) {
+            this.createNoteElement(bestNote);
             bestNote.holding = true;
             bestNote.element.classList.add("holding");
             return;
@@ -256,7 +293,7 @@ class BattlePlayer {
 
         bestNote.hit = true;
         bestNote.judged = true;
-        bestNote.element.remove();
+        bestNote.element?.remove();
         this.registerJudgement(judgement, lane);
 
     }
@@ -283,7 +320,7 @@ class BattlePlayer {
 
         heldNote.hit = true;
         heldNote.judged = true;
-        heldNote.element.remove();
+        heldNote.element?.remove();
         this.registerJudgement(judgement, lane);
 
     }
@@ -415,6 +452,8 @@ class BattleGame {
         this.lastTopStatusY = null;
         this.lastBottomStatusY = null;
         this.lastStatusUpdateAt = 0;
+        this.lastDividerY = null;
+        this.scrollPixelsPerSecond = 0;
 
         this.bindInputs();
 
@@ -632,6 +671,8 @@ class BattleGame {
 
         this.top.updateLayout();
         this.bottom.updateLayout();
+        this.scrollPixelsPerSecond =
+            (this.top.pixelsPerSecond + this.bottom.pixelsPerSecond) / 2;
         this.updateLayoutCache();
         this.resetDivider();
 
@@ -714,6 +755,10 @@ class BattleGame {
 
         this.top.reset();
         this.bottom.reset();
+        this.top.root.style.flex = "";
+        this.bottom.root.style.flex = "";
+        this.lastDividerY = null;
+        this.scrollPixelsPerSecond = 0;
 
         this.divider.classList.remove("hidden");
         this.topStatus.classList.remove("hidden");
@@ -779,8 +824,29 @@ class BattleGame {
             -this.maxShift,
             Math.min(this.maxShift, diff * 0.03)
         );
+        const dividerY = this.centerY + shift;
 
-        this.divider.style.top = (this.centerY + shift) + "px";
+        if (this.scrollPixelsPerSecond <= 0) {
+            this.scrollPixelsPerSecond =
+                (this.top.pixelsPerSecond + this.bottom.pixelsPerSecond) / 2;
+        }
+
+        if (this.lastDividerY !== dividerY) {
+            this.top.root.style.flex = "0 0 " + dividerY + "px";
+            this.bottom.root.style.flex =
+                "0 0 " + (this.fieldHeight - dividerY) + "px";
+            this.top.updateLayout(true);
+            this.bottom.updateLayout(true);
+            this.top.setScrollSpeed(this.scrollPixelsPerSecond);
+            this.bottom.setScrollSpeed(this.scrollPixelsPerSecond);
+            this.lastDividerY = dividerY;
+        }
+
+        const dividerChanged = this.divider.style.top !== dividerY + "px";
+
+        if (dividerChanged) {
+            this.divider.style.top = dividerY + "px";
+        }
 
         const now = performance.now();
         const topText =
@@ -794,11 +860,12 @@ class BattleGame {
             bottomText !== this.lastBottomStatusText;
 
         if (
+            dividerChanged ||
             statusChanged ||
             now - this.lastStatusUpdateAt >= BATTLE_STATUS_UPDATE_INTERVAL
         ) {
             this.lastStatusUpdateAt = now;
-            this.updateStatusPanels(this.centerY + shift);
+            this.updateStatusPanels(dividerY);
         }
 
         if (this.maxShift <= 0) {

@@ -21,6 +21,19 @@ test("BattlePlayer miss reset combo et met a jour le score derive", function () 
     assert.equal(player.score, -120);
 });
 
+test("Battle ne cree les notes que lorsqu'elles deviennent visibles", function () {
+    const player = battleGame.bottom;
+    player.reset();
+    player.spawnNotes([{ lane: 0, hitTime: 10, holdDuration: 0 }]);
+
+    assert.equal(player.notes[0].element, null);
+
+    player.updateNotes(9);
+
+    assert.ok(player.notes[0].element);
+    player.reset();
+});
+
 test("Battle divider suit l'ecart de score entre joueurs", function () {
     battleGame.top.reset();
     battleGame.bottom.reset();
@@ -32,6 +45,30 @@ test("Battle divider suit l'ecart de score entre joueurs", function () {
 
     const y = parseFloat(battleGame.divider.style.top);
     assert.ok(y > 300, "La barre doit descendre si le joueur du haut domine");
+});
+
+test("Battle conserve la vitesse de defilement pour les deux joueurs", function () {
+    battleGame.top.score = 1200;
+    battleGame.bottom.score = 0;
+
+    battleGame.updateDivider();
+
+    assert.equal(
+        battleGame.top.pixelsPerSecond,
+        battleGame.bottom.pixelsPerSecond
+    );
+});
+
+test("Battle agrandit la zone du joueur qui pousse la barre", function () {
+    battleGame.top.score = 1200;
+    battleGame.bottom.score = 0;
+
+    battleGame.updateDivider();
+
+    assert.ok(
+        parseFloat(battleGame.top.root.style.flexBasis) >
+        parseFloat(battleGame.bottom.root.style.flexBasis)
+    );
 });
 
 test("Battle status panels affichent score/combo pres de la barre", function () {
