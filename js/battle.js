@@ -541,6 +541,14 @@ class BattleGame {
 
     bindTouch(player) {
 
+        player.root.addEventListener("contextmenu", (event) => {
+
+            if (this.running && event.target.closest(".lane")) {
+                event.preventDefault();
+            }
+
+        });
+
         player.root.querySelectorAll(".lane").forEach((laneEl) => {
 
             const lane = parseInt(laneEl.dataset.lane, 10);

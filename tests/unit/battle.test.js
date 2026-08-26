@@ -34,6 +34,17 @@ test("Battle ne cree les notes que lorsqu'elles deviennent visibles", function (
     player.reset();
 });
 
+test("Battle bloque le menu contextuel sur les lanes pendant une partie", function () {
+    const lane = battleGame.bottom.root.querySelector(".lane");
+    const event = new Event("contextmenu", { bubbles: true, cancelable: true });
+
+    battleGame.running = true;
+    lane.dispatchEvent(event);
+
+    assert.equal(event.defaultPrevented, true);
+    battleGame.running = false;
+});
+
 test("Battle divider suit l'ecart de score entre joueurs", function () {
     battleGame.top.reset();
     battleGame.bottom.reset();
