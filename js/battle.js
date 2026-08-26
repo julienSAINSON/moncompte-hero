@@ -339,7 +339,7 @@ class BattleGame {
 
     bindInputs() {
 
-        const keyMapBottom = { "a": 0, "s": 1, "d": 2, "f": 3 };
+        const keyMapBottom = { "q": 0, "s": 1, "d": 2, "f": 3 };
         const keyMapTop = { "u": 0, "i": 1, "o": 2, "p": 3 };
         const pressedBottom = new Set();
         const pressedTop = new Set();

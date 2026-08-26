@@ -3,7 +3,7 @@ class InputManager {
     constructor() {
 
         this.keyMap = {
-            "a": 0,
+            "q": 0,
             "s": 1,
             "d": 2,
             "f": 3
@@ -49,9 +49,22 @@ class InputManager {
 
     }
 
+    isTypingInInput(target) {
+
+        return !!target && (
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA"
+        );
+
+    }
+
     onKeyDown(event) {
 
         if (!window.game) {
+            return;
+        }
+
+        if (this.isTypingInInput(event.target)) {
             return;
         }
 
@@ -83,6 +96,10 @@ class InputManager {
 
     onKeyUp(event) {
 
+        if (this.isTypingInInput(event.target)) {
+            return;
+        }
+
         const key = event.key.toLowerCase();
 
         if (!(key in this.keyMap)) {
@@ -106,11 +123,13 @@ class InputManager {
 
     setupTouchInput() {
 
-        // empeche le menu contextuel declenche par un appui long (hold notes)
-        document.addEventListener(
-            "contextmenu",
-            (event) => event.preventDefault()
-        );
+        // empeche le menu contextuel declenche par un appui long (hold notes),
+        // sans bloquer le clic droit ailleurs sur la page (ex: copier le QR code)
+        document.addEventListener("contextmenu", (event) => {
+            if (event.target.closest(".lane")) {
+                event.preventDefault();
+            }
+        });
 
         // Les Pointer Events couvrent le tactile, le stylet et la souris.
         document.querySelectorAll(".lane").forEach((laneEl) => {
