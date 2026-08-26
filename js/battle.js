@@ -9,6 +9,7 @@ const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: -3 };
 const BATTLE_SCORE_PER_BALANCE = 120;
 const BATTLE_SCORE_PER_COMBO = 40;
 const BATTLE_LANE_COLORS = ["#ff5555", "#ffaa00", "#33cc66", "#3399ff"];
+const BATTLE_STATUS_UPDATE_INTERVAL = 50;
 
 function isTouchInputActive() {
     return !!(window.inputManager && window.inputManager.isTouchDevice);
@@ -31,6 +32,7 @@ class BattlePlayer {
 
         this.hitLineY = 0;
         this.pixelsPerSecond = 0;
+        this.laneWidth = 0;
 
         this.updateLayout();
 
@@ -47,6 +49,7 @@ class BattlePlayer {
         }
 
         this.pixelsPerSecond = this.hitLineY / renderer.lookaheadSeconds;
+        this.laneWidth = this.root.clientWidth / 4;
 
     }
 
@@ -152,7 +155,7 @@ class BattlePlayer {
 
     updateDiagonal(note, y, holdHeight) {
 
-        const laneWidth = this.root.clientWidth / 4;
+        const laneWidth = this.laneWidth;
         const xStart = note.lane * laneWidth + laneWidth / 2;
         const xEnd = note.toLane * laneWidth + laneWidth / 2;
         const deltaX = xStart - xEnd;
@@ -317,7 +320,7 @@ class BattlePlayer {
         text.className = "battleFloatingText " + judgement;
         text.textContent = judgement.toUpperCase();
 
-        const laneWidth = this.root.clientWidth / 4;
+        const laneWidth = this.laneWidth;
         const x = laneIndex * laneWidth + laneWidth / 2;
         const y = Math.max(28, this.hitLineY - 30);
 
@@ -404,13 +407,30 @@ class BattleGame {
         this.animationFrame = null;
         this.preRollEndsAt = null;
         this.preRollDuration = 0;
+        this.fieldHeight = 0;
+        this.centerY = 0;
+        this.maxShift = 0;
+        this.lastTopStatusText = "";
+        this.lastBottomStatusText = "";
+        this.lastTopStatusY = null;
+        this.lastBottomStatusY = null;
+        this.lastStatusUpdateAt = 0;
 
         this.bindInputs();
 
         window.addEventListener("resize", () => {
             this.top.updateLayout();
             this.bottom.updateLayout();
+            this.updateLayoutCache();
         });
+
+    }
+
+    updateLayoutCache() {
+
+        this.fieldHeight = this.field.clientHeight;
+        this.centerY = this.fieldHeight / 2;
+        this.maxShift = Math.max(0, this.centerY - BATTLE_EDGE_MARGIN);
 
     }
 
@@ -612,6 +632,7 @@ class BattleGame {
 
         this.top.updateLayout();
         this.bottom.updateLayout();
+        this.updateLayoutCache();
         this.resetDivider();
 
         const firstNote = this.chartNotes[0];
@@ -707,7 +728,13 @@ class BattleGame {
         this.divider.style.top = "50%";
         this.dividerFill.style.left = "0%";
         this.dividerFill.style.width = "0%";
-        this.updateStatusPanels(this.field.clientHeight / 2);
+        this.updateLayoutCache();
+        this.lastTopStatusText = "";
+        this.lastBottomStatusText = "";
+        this.lastTopStatusY = null;
+        this.lastBottomStatusY = null;
+        this.lastStatusUpdateAt = 0;
+        this.updateStatusPanels(this.centerY);
 
     }
 
@@ -739,30 +766,31 @@ class BattleGame {
 
     updateDivider() {
 
-        const fieldHeight = this.field.clientHeight;
-        const centerY = fieldHeight / 2;
-        const maxShift = Math.max(0, centerY - BATTLE_EDGE_MARGIN);
-
         const topPressure = this.getPlayerPressure(this.top);
         const bottomPressure = this.getPlayerPressure(this.bottom);
         const diff = topPressure - bottomPressure;
 
         // Reponse immediate: deplacement lineaire directement lie au score affiche.
         const shift = Math.max(
-            -maxShift,
-            Math.min(maxShift, diff * 0.03)
+            -this.maxShift,
+            Math.min(this.maxShift, diff * 0.03)
         );
 
-        this.divider.style.top = (centerY + shift) + "px";
-        this.updateStatusPanels(centerY + shift);
+        this.divider.style.top = (this.centerY + shift) + "px";
 
-        if (maxShift <= 0) {
+        const now = performance.now();
+        if (now - this.lastStatusUpdateAt >= BATTLE_STATUS_UPDATE_INTERVAL) {
+            this.lastStatusUpdateAt = now;
+            this.updateStatusPanels(this.centerY + shift);
+        }
+
+        if (this.maxShift <= 0) {
             return;
         }
 
-        if (shift >= maxShift) {
+        if (shift >= this.maxShift) {
             this.endByLineReached("bottom");
-        } else if (shift <= -maxShift) {
+        } else if (shift <= -this.maxShift) {
             this.endByLineReached("top");
         }
 
@@ -778,14 +806,28 @@ class BattleGame {
             "J1  Score: " + Math.round(this.bottom.score) +
             "  Combo: " + this.bottom.combo;
 
-        this.topStatus.textContent = topText;
-        this.bottomStatus.textContent = bottomText;
+        if (topText !== this.lastTopStatusText) {
+            this.topStatus.textContent = topText;
+            this.lastTopStatusText = topText;
+        }
+
+        if (bottomText !== this.lastBottomStatusText) {
+            this.bottomStatus.textContent = bottomText;
+            this.lastBottomStatusText = bottomText;
+        }
 
         const topY = Math.max(8, dividerY - 34);
-        const bottomY = Math.min(this.field.clientHeight - 34, dividerY + 12);
+        const bottomY = Math.min(this.fieldHeight - 34, dividerY + 12);
 
-        this.topStatus.style.top = topY + "px";
-        this.bottomStatus.style.top = bottomY + "px";
+        if (this.lastTopStatusY !== topY) {
+            this.topStatus.style.top = topY + "px";
+            this.lastTopStatusY = topY;
+        }
+
+        if (this.lastBottomStatusY !== bottomY) {
+            this.bottomStatus.style.top = bottomY + "px";
+            this.lastBottomStatusY = bottomY;
+        }
 
     }
 
