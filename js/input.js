@@ -72,7 +72,11 @@ class InputManager {
 
         if (key === " ") {
             event.preventDefault();
-            window.game.toggleRecordingPause();
+
+            if (window.game.recorder?.togglePause) {
+                window.game.recorder.togglePause();
+            }
+
             return;
         }
 

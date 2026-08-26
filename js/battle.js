@@ -6,7 +6,8 @@ const BATTLE_HIT_WINDOW = 0.10;
 const BATTLE_HOLD_START_WINDOW = 0.15;
 const BATTLE_EDGE_MARGIN = 100; // distance (px) entre le bord de l'ecran et la ligne verte
 const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: -3 };
-const BATTLE_PX_PER_POINT = 6; // sensibilite du deplacement de la barre centrale
+const BATTLE_SCORE_PER_BALANCE = 120;
+const BATTLE_SCORE_PER_COMBO = 40;
 const BATTLE_LANE_COLORS = ["#ff5555", "#ffaa00", "#33cc66", "#3399ff"];
 
 function isTouchInputActive() {
@@ -26,6 +27,7 @@ class BattlePlayer {
 
         this.scoreEl = rootEl.querySelector(".battleScore");
         this.comboEl = rootEl.querySelector(".battleCombo");
+        this.hitLineEl = rootEl.querySelector(".battleHitLine");
 
         this.hitLineY = 0;
         this.pixelsPerSecond = 0;
@@ -36,7 +38,14 @@ class BattlePlayer {
 
     updateLayout() {
 
-        this.hitLineY = this.root.clientHeight - BATTLE_EDGE_MARGIN;
+        const hitLine = this.root.querySelector(".battleHitLine");
+
+        if (hitLine) {
+            this.hitLineY = hitLine.offsetTop;
+        } else {
+            this.hitLineY = this.root.clientHeight - BATTLE_EDGE_MARGIN;
+        }
+
         this.pixelsPerSecond = this.hitLineY / renderer.lookaheadSeconds;
 
     }
@@ -182,7 +191,7 @@ class BattlePlayer {
                 note.judged = true;
                 note.hit = true;
                 note.element.remove();
-                this.registerJudgement("miss");
+                this.registerJudgement("miss", note.lane);
 
             }
 
@@ -245,7 +254,7 @@ class BattlePlayer {
         bestNote.hit = true;
         bestNote.judged = true;
         bestNote.element.remove();
-        this.registerJudgement(judgement);
+        this.registerJudgement(judgement, lane);
 
     }
 
@@ -272,30 +281,84 @@ class BattlePlayer {
         heldNote.hit = true;
         heldNote.judged = true;
         heldNote.element.remove();
-        this.registerJudgement(judgement);
+        this.registerJudgement(judgement, lane);
 
     }
 
-    registerJudgement(judgement) {
+    registerJudgement(judgement, lane) {
 
         if (judgement === "miss") {
             this.combo = 0;
         } else {
             this.combo++;
-            this.score += judgement === "perfect"
-                ? 300
-                : judgement === "great" ? 200 : 100;
         }
 
         this.balance += BATTLE_POINTS[judgement];
 
+        // Score battle derive directement de la metrique qui pilote la barre.
+        this.score =
+            this.balance * BATTLE_SCORE_PER_BALANCE +
+            this.combo * BATTLE_SCORE_PER_COMBO;
+
         this.updateHUD();
+        this.showHitLineEffect(judgement);
+
+        if (judgement !== "miss") {
+            this.showLaneJudgement(lane, judgement);
+        }
+
+    }
+
+    showLaneJudgement(lane, judgement) {
+
+        const laneIndex = Number.isInteger(lane) ? lane : 0;
+
+        const text = document.createElement("div");
+        text.className = "battleFloatingText " + judgement;
+        text.textContent = judgement.toUpperCase();
+
+        const laneWidth = this.root.clientWidth / 4;
+        const x = laneIndex * laneWidth + laneWidth / 2;
+        const y = Math.max(28, this.hitLineY - 30);
+
+        text.style.left = x + "px";
+        text.style.top = y + "px";
+
+        this.root.appendChild(text);
+
+        setTimeout(() => text.remove(), 500);
+
+    }
+
+    showHitLineEffect(judgement) {
+
+        if (!this.hitLineEl) {
+            return;
+        }
+
+        this.hitLineEl.classList.remove(
+            "show",
+            "perfect",
+            "great",
+            "good",
+            "miss"
+        );
+
+        this.hitLineEl.classList.add(judgement);
+
+        // Force le redemarrage de l'animation meme si le meme type revient.
+        void this.hitLineEl.offsetWidth;
+        this.hitLineEl.classList.add("show");
+
+        setTimeout(() => {
+            this.hitLineEl.classList.remove("show", "perfect", "great", "good", "miss");
+        }, 180);
 
     }
 
     updateHUD() {
 
-        this.scoreEl.textContent = "Score : " + this.score;
+        this.scoreEl.textContent = "Score : " + Math.round(this.score);
         this.comboEl.textContent = "Combo : " + this.combo;
 
     }
@@ -307,6 +370,12 @@ class BattlePlayer {
         this.score = 0;
         this.combo = 0;
         this.updateHUD();
+
+        this.root.querySelectorAll(".battleFloatingText").forEach((el) => el.remove());
+
+        if (this.hitLineEl) {
+            this.hitLineEl.classList.remove("show", "perfect", "great", "good", "miss");
+        }
 
     }
 
@@ -322,6 +391,14 @@ class BattleGame {
 
         this.top = new BattlePlayer(document.getElementById("battleTop"));
         this.bottom = new BattlePlayer(document.getElementById("battleBottom"));
+
+        this.topStatus = document.createElement("div");
+        this.topStatus.className = "battleStatus battleStatusTop";
+        this.field.appendChild(this.topStatus);
+
+        this.bottomStatus = document.createElement("div");
+        this.bottomStatus.className = "battleStatus battleStatusBottom";
+        this.field.appendChild(this.bottomStatus);
 
         this.running = false;
         this.animationFrame = null;
@@ -339,8 +416,23 @@ class BattleGame {
 
     bindInputs() {
 
-        const keyMapBottom = { "q": 0, "s": 1, "d": 2, "f": 3 };
-        const keyMapTop = { "u": 0, "i": 1, "o": 2, "p": 3 };
+        const keyMapBottom = {
+            "q": 0,
+            "a": 0,
+            "s": 1,
+            "d": 2,
+            "f": 3
+        };
+        const keyMapTop = {
+            "u": 0,
+            "j": 0,
+            "i": 1,
+            "k": 1,
+            "o": 2,
+            "l": 2,
+            "p": 3,
+            "m": 3
+        };
         const pressedBottom = new Set();
         const pressedTop = new Set();
 
@@ -601,6 +693,11 @@ class BattleGame {
 
         this.top.reset();
         this.bottom.reset();
+
+        this.divider.classList.remove("hidden");
+        this.topStatus.classList.remove("hidden");
+        this.bottomStatus.classList.remove("hidden");
+
         this.resetDivider();
 
     }
@@ -608,7 +705,9 @@ class BattleGame {
     resetDivider() {
 
         this.divider.style.top = "50%";
+        this.dividerFill.style.left = "0%";
         this.dividerFill.style.width = "0%";
+        this.updateStatusPanels(this.field.clientHeight / 2);
 
     }
 
@@ -638,35 +737,24 @@ class BattleGame {
 
     }
 
-    updateProgress(currentTime) {
-
-        const duration = audioManager.getDuration();
-
-        if (duration <= 0) {
-            this.dividerFill.style.width = "0%";
-            return;
-        }
-
-        const percent = Math.max(0, Math.min(100, (currentTime / duration) * 100));
-
-        this.dividerFill.style.width = percent + "%";
-
-    }
-
     updateDivider() {
 
         const fieldHeight = this.field.clientHeight;
         const centerY = fieldHeight / 2;
         const maxShift = Math.max(0, centerY - BATTLE_EDGE_MARGIN);
 
-        const diff = this.top.balance - this.bottom.balance;
+        const topPressure = this.getPlayerPressure(this.top);
+        const bottomPressure = this.getPlayerPressure(this.bottom);
+        const diff = topPressure - bottomPressure;
 
+        // Reponse immediate: deplacement lineaire directement lie au score affiche.
         const shift = Math.max(
             -maxShift,
-            Math.min(maxShift, diff * BATTLE_PX_PER_POINT)
+            Math.min(maxShift, diff * 0.03)
         );
 
         this.divider.style.top = (centerY + shift) + "px";
+        this.updateStatusPanels(centerY + shift);
 
         if (maxShift <= 0) {
             return;
@@ -677,6 +765,50 @@ class BattleGame {
         } else if (shift <= -maxShift) {
             this.endByLineReached("top");
         }
+
+    }
+
+    updateStatusPanels(dividerY) {
+
+        const topText =
+            "J2  Score: " + Math.round(this.top.score) +
+            "  Combo: " + this.top.combo;
+
+        const bottomText =
+            "J1  Score: " + Math.round(this.bottom.score) +
+            "  Combo: " + this.bottom.combo;
+
+        this.topStatus.textContent = topText;
+        this.bottomStatus.textContent = bottomText;
+
+        const topY = Math.max(8, dividerY - 34);
+        const bottomY = Math.min(this.field.clientHeight - 34, dividerY + 12);
+
+        this.topStatus.style.top = topY + "px";
+        this.bottomStatus.style.top = bottomY + "px";
+
+    }
+
+    getPlayerPressure(player) {
+
+        return player.score;
+
+    }
+
+    updateProgress(currentTime) {
+
+        const duration = audioManager.getDuration();
+
+        if (duration <= 0) {
+            this.dividerFill.style.left = "0%";
+            this.dividerFill.style.width = "0%";
+            return;
+        }
+
+        const percent = Math.max(0, Math.min(100, (currentTime / duration) * 100));
+
+        this.dividerFill.style.left = "0%";
+        this.dividerFill.style.width = percent + "%";
 
     }
 
@@ -701,10 +833,13 @@ class BattleGame {
 
         let message;
 
-        if (this.top.balance === this.bottom.balance) {
+        const topPressure = this.getPlayerPressure(this.top);
+        const bottomPressure = this.getPlayerPressure(this.bottom);
+
+        if (topPressure === bottomPressure) {
             message = "Egalite parfaite !";
         } else {
-            message = this.top.balance > this.bottom.balance
+            message = topPressure > bottomPressure
                 ? "Joueur 2 gagne !"
                 : "Joueur 1 gagne !";
         }
@@ -714,6 +849,10 @@ class BattleGame {
     }
 
     showEnd(title, message) {
+
+        this.divider.classList.add("hidden");
+        this.topStatus.classList.add("hidden");
+        this.bottomStatus.classList.add("hidden");
 
         document.getElementById("endTitle").textContent = title;
 

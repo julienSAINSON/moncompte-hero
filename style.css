@@ -967,6 +967,95 @@ body {
     pointer-events: none;
 }
 
+#battlefield .battleHud {
+    display: none;
+}
+
+.battleStatus {
+
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+
+    min-width: 250px;
+    text-align: center;
+
+    padding: 3px 10px;
+    border-radius: 999px;
+
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid #5a5a5a;
+    color: #f3f3f3;
+
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+
+    pointer-events: none;
+    z-index: 11;
+
+    transition: top .12s linear;
+}
+
+.battleStatusTop {
+    color: #9cd8ff;
+}
+
+.battleStatusBottom {
+    color: #b6ffd0;
+}
+
+.battleFloatingText {
+
+    position: absolute;
+    transform: translate(-50%, 0);
+
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: 1px;
+
+    pointer-events: none;
+    z-index: 9;
+
+    animation: battleFloatText .5s forwards;
+}
+
+#battleTop .battleFloatingText {
+    transform: translate(-50%, 0) rotate(180deg);
+}
+
+.battleFloatingText.perfect { color: #00ff99; }
+.battleFloatingText.great { color: #4dc3ff; }
+.battleFloatingText.good { color: gold; }
+
+@keyframes battleFloatText {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, -70px);
+    }
+}
+
+#battleTop .battleFloatingText {
+    animation: battleFloatTextTop .5s forwards;
+}
+
+@keyframes battleFloatTextTop {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0) rotate(180deg);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, -70px) rotate(180deg);
+    }
+}
+
 .battleHitLine {
 
     position: absolute;
@@ -980,6 +1069,28 @@ body {
     background: #00ff88;
 
     box-shadow: 0 0 15px #00ff88;
+
+    transition: background .08s linear, box-shadow .08s linear;
+}
+
+.battleHitLine.show.perfect {
+    background: #00ff99;
+    box-shadow: 0 0 18px #00ff99;
+}
+
+.battleHitLine.show.great {
+    background: #4dc3ff;
+    box-shadow: 0 0 18px #4dc3ff;
+}
+
+.battleHitLine.show.good {
+    background: #ffd84d;
+    box-shadow: 0 0 18px #ffd84d;
+}
+
+.battleHitLine.show.miss {
+    background: #ff4444;
+    box-shadow: 0 0 18px #ff4444;
 }
 
 .battleKeyGuide {
@@ -1018,6 +1129,10 @@ body {
 }
 
 #battleDividerFill {
+
+    position: absolute;
+    left: 0;
+    top: 0;
 
     width: 0%;
     height: 100%;

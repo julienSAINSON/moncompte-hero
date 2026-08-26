@@ -1,4 +1,4 @@
-const CACHE_NAME = "moncompte-hero-v24";
+const CACHE_NAME = "moncompte-hero-v38";
 const APP_SHELL = [
     "./",
     "index.html",
@@ -12,6 +12,8 @@ const APP_SHELL = [
     "js/input.js",
     "js/renderer.js",
     "js/battle.js",
+    "js/song-menu.js",
+    "js/recording.js",
     "js/game.js",
     "assets/default/partition.json",
     "assets/default/partition.js",

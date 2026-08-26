@@ -5,7 +5,6 @@
 const DEFAULT_PLAY_MP3 = "assets/default/saisis ton sciforma.mp3";
 const DEFAULT_PLAY_CHART = "assets/default/partition.json";
 const MAX_CONSECUTIVE_MISSES = 5;
-const MIN_HOLD_DURATION = 0.15;
 
 class Game {
 
@@ -81,7 +80,12 @@ class Game {
             document.getElementById("selectedSongInfo");
 
         this.selectedSong = null;
-        this.songs = [];
+        this.songMenu = new SongMenu({
+            overlay: this.songListOverlay,
+            listEl: this.songListEl,
+            infoEl: this.selectedSongInfo,
+            onSelect: (song) => this.selectSong(song)
+        });
 
         this.modeSelector =
             document.getElementById("modeSelector");
@@ -97,12 +101,6 @@ class Game {
 
         this.editionControls =
             document.getElementById("editionControls");
-
-        this.fileInput =
-            document.getElementById("musicFile");
-
-        this.chartFileInput =
-            document.getElementById("chartFile");
 
         this.restartButton =
             document.getElementById("restartButton");
@@ -150,37 +148,7 @@ class Game {
             }
         );
 
-        this.recordButton =
-            document.getElementById("recordButton");
-
-        this.testChartButton =
-            document.getElementById("testChartButton");
-
-        this.pauseButton =
-            document.getElementById("pauseButton");
-
-        this.stopButton =
-            document.getElementById("stopButton");
-
-        this.recordButton.addEventListener(
-            "click",
-            () => this.startRecording()
-        );
-
-        this.testChartButton.addEventListener(
-            "click",
-            () => this.startCustomPlay()
-        );
-
-        this.pauseButton.addEventListener(
-            "click",
-            () => this.toggleRecordingPause()
-        );
-
-        this.stopButton.addEventListener(
-            "click",
-            () => this.stopRecording()
-        );
+        this.recorder = new ChartRecorder(this);
 
         this.modePlayButton.addEventListener(
             "click",
@@ -194,9 +162,6 @@ class Game {
 
         this.mode = "play"; // play | record
         this.appMode = "play"; // play | edition
-        this.recordedNotes = [];
-        this.recordingStarts = new Map();
-        this.isRecordingPaused = false;
 
         // Le mode edition n'est visible que via le parametre d'URL ?mode=1
         const urlParams = new URLSearchParams(window.location.search);
@@ -282,7 +247,7 @@ class Game {
             isPlayMode
         );
 
-        this.updateRecordingControls();
+        this.recorder.updateControls();
 
         this.modeInfo.textContent = isPlayMode
             ? "Mode Play : chargement automatique des fichiers par defaut."
@@ -414,27 +379,7 @@ class Game {
 
     async resolveSongById(songId) {
 
-        if (this.songs.length === 0) {
-
-            try {
-
-                const response = await fetch(
-                    "assets/songs/manifest.json",
-                    { cache: "no-store" }
-                );
-
-                this.songs = response.ok ? await response.json() : [];
-
-            } catch (error) {
-
-                console.error(error);
-                this.songs = [];
-
-            }
-
-        }
-
-        return this.songs.find((song) => song.id === songId) || null;
+        return this.songMenu.resolveSongById(songId);
 
     }
 
@@ -455,81 +400,26 @@ class Game {
 
     async openSongList() {
 
-        if (this.songs.length === 0) {
-
-            try {
-
-                const response = await fetch(
-                    "assets/songs/manifest.json",
-                    { cache: "no-store" }
-                );
-
-                this.songs = response.ok ? await response.json() : [];
-
-            } catch (error) {
-
-                console.error(error);
-                this.songs = [];
-
-            }
-
-        }
-
-        if (this.songs.length === 0) {
-            alert("Aucune musique disponible dans assets/songs/manifest.json");
-            return;
-        }
-
-        this.renderSongList();
-        this.songListOverlay.classList.remove("hidden");
+        await this.songMenu.open(this.selectedSong?.id || null);
 
     }
 
     renderSongList() {
 
-        this.songListEl.innerHTML = "";
-
-        for (const song of this.songs) {
-
-            const item = document.createElement("li");
-
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "songListItem";
-            button.textContent = song.title;
-
-            button.classList.toggle(
-                "selected",
-                this.selectedSong?.id === song.id
-            );
-
-            button.addEventListener(
-                "click",
-                () => this.selectSong(song)
-            );
-
-            item.appendChild(button);
-            this.songListEl.appendChild(item);
-
-        }
+        this.songMenu.render(this.selectedSong?.id || null);
 
     }
 
     selectSong(song) {
 
         this.selectedSong = song;
-
-        this.selectedSongInfo.textContent =
-            "Musique selectionnee : " + song.title;
-
-        this.closeSongList();
         this.updatePlaySelectionUI();
 
     }
 
     closeSongList() {
 
-        this.songListOverlay.classList.add("hidden");
+        this.songMenu.close();
 
     }
 
@@ -886,140 +776,6 @@ class Game {
 
 
 
-    startRecording() {
-
-        if (this.running) {
-            return;
-        }
-
-    const file = this.fileInput.files[0];
-
-    if (!file) {
-
-        alert("Choisissez un MP3.");
-
-        return;
-
-    }
-
-    this.mode = "record";
-
-    this.resetRunState();
-
-    this.recordedNotes = [];
-    this.recordingStarts.clear();
-    this.isRecordingPaused = false;
-
-    audioManager.load(file, true);
-
-    audioManager.play();
-
-    this.running = true;
-
-    this.updateRecordingControls();
-
-    this.loop();
-
-}
-
-    async startCustomPlay() {
-
-        if (this.running) {
-            return;
-        }
-
-        const musicFile = this.fileInput.files[0];
-        const chartFile = this.chartFileInput.files[0];
-
-        if (!musicFile || !chartFile) {
-            alert("Choisissez un MP3 et une partition JSON.");
-            return;
-        }
-
-        let chartData;
-
-        try {
-            chartData = JSON.parse(await chartFile.text());
-        } catch (_) {
-            alert("Le fichier de partition n'est pas un JSON valide.");
-            return;
-        }
-
-        if (!Array.isArray(chartData.notes)) {
-            alert("La partition ne contient aucune liste de notes valide.");
-            return;
-        }
-
-        this.mode = "play";
-        this.resetRunState();
-        this.loadChartNotes(chartData);
-
-        audioManager.load(musicFile);
-        audioManager.play();
-
-        this.running = true;
-        this.updateRecordingControls();
-        this.loop();
-
-    }
-
-    updateRecordingControls() {
-
-        const canControlRecording =
-            this.mode === "record" && this.running;
-
-        this.pauseButton.disabled = !canControlRecording;
-        this.stopButton.disabled = !canControlRecording;
-        this.pauseButton.textContent = this.isRecordingPaused
-            ? "Reprendre"
-            : "Pause";
-
-    }
-
-    toggleRecordingPause() {
-
-        if (this.mode !== "record" || !this.running) {
-            return;
-        }
-
-        if (this.isRecordingPaused) {
-            audioManager.play();
-            this.isRecordingPaused = false;
-        } else {
-            inputManager.releaseAllInputs();
-            audioManager.pause();
-            this.isRecordingPaused = true;
-        }
-
-        this.updateRecordingControls();
-
-    }
-
-    stopRecording() {
-
-        if (this.mode !== "record" || !this.running) {
-            return;
-        }
-
-        inputManager.releaseAllInputs();
-        this.running = false;
-        this.isRecordingPaused = false;
-
-        if (this.animationFrame) {
-            cancelAnimationFrame(this.animationFrame);
-        }
-
-        audioManager.stop();
-        this.downloadChart();
-        this.updateRecordingControls();
-
-        renderer.showEndScreen(
-            "Edition arretee",
-            "La partition incomplete a ete telechargee."
-        );
-
-    }
-
     //--------------------------------------------------
     // Génération des notes
     //--------------------------------------------------
@@ -1191,75 +947,22 @@ renderer.showHitEffect("miss");
 
     }
 
-startRecordingNote(lane) {
-
-    if (this.recordingStarts.has(lane)) {
-        return;
-    }
-
-    this.recordingStarts.set(
-        lane,
-        audioManager.getCurrentTime()
-    );
-
-}
-
-finishRecordingNote(lane, endLane = lane) {
-
-    const hitTime = this.recordingStarts.get(lane);
-
-    if (hitTime === undefined) {
-        return;
-    }
-
-    this.recordingStarts.delete(lane);
-
-    const holdDuration = Math.max(
-        0,
-        audioManager.getCurrentTime() - hitTime
-    );
-
-    this.recordNote(lane, hitTime, holdDuration, endLane);
-
-}
-
-recordNote(lane, hitTime, holdDuration = 0, toLane = lane) {
-
-    const note = {
-        lane: lane,
-        hitTime: Number(hitTime.toFixed(3))
-    };
-
-    if (holdDuration >= MIN_HOLD_DURATION) {
-        note.holdDuration = Number(holdDuration.toFixed(3));
-
-        if (toLane !== lane) {
-            note.toLane = toLane;
-        }
-    }
-
-    this.recordedNotes.push(note);
-
-    console.log(this.recordedNotes);
-
-}
-
 //--------------------------------------------------
 // Gestion des touches
 //--------------------------------------------------
 
     pressLane(lane) {
-if (this.mode === "record") {
+    if (this.mode === "record") {
 
-    if (!this.running || this.isRecordingPaused) {
+        if (!this.running || this.recorder.isRecordingPaused) {
+            return;
+        }
+
+        this.recorder.startNote(lane);
+
         return;
+
     }
-
-    this.startRecordingNote(lane);
-
-    return;
-
-}
 
         if (!this.running || this.isCountdownActive)
             return;
@@ -1332,11 +1035,11 @@ renderer.showJudgement(judgement);
     releaseLane(lane, endLane = lane, requireExactLane = false) {
 
         if (this.mode === "record") {
-            if (!this.running || this.isRecordingPaused) {
-                return;
-            }
+                if (!this.running || this.recorder.isRecordingPaused) {
+                    return;
+                }
 
-            this.finishRecordingNote(lane, endLane);
+                this.recorder.finishNote(lane, endLane);
             return;
         }
 
@@ -1387,48 +1090,6 @@ renderer.showJudgement(judgement);
     }
 
 
-downloadChart() {
-
-    for (const lane of this.recordingStarts.keys()) {
-        this.finishRecordingNote(lane);
-    }
-
-    this.recordedNotes.sort(
-        (firstNote, secondNote) => firstNote.hitTime - secondNote.hitTime
-    );
-
-    const chart = {
-
-        title: this.fileInput.files[0].name,
-
-        notes: this.recordedNotes
-
-    };
-
-    const json =
-        JSON.stringify(chart, null, 4);
-
-    const blob =
-        new Blob([json], {
-            type: "application/json"
-        });
-
-    const url =
-        URL.createObjectURL(blob);
-
-    const a =
-        document.createElement("a");
-
-    a.href = url;
-
-    a.download = "partition.json";
-
-    a.click();
-
-    URL.revokeObjectURL(url);
-
-}
-
     //--------------------------------------------------
     // Fin de chanson
     //--------------------------------------------------
@@ -1436,8 +1097,8 @@ downloadChart() {
     onSongFinished() {
 if (this.mode === "record") {
 
-    this.downloadChart();
-    this.isRecordingPaused = false;
+        this.recorder.downloadChart();
+        this.recorder.isRecordingPaused = false;
 
 }
 
@@ -1453,7 +1114,7 @@ if (this.mode === "record") {
 
         this.stopArenaScorePush();
 
-        this.updateRecordingControls();
+            this.recorder.updateControls();
 
         renderer.showEndScreen();
 
@@ -1605,9 +1266,9 @@ if (this.mode === "record") {
         renderer.hideEndScreen();
 
         this.mode = "play";
-        this.isRecordingPaused = false;
-        this.recordingStarts.clear();
-        this.updateRecordingControls();
+            this.recorder.isRecordingPaused = false;
+            this.recorder.recordingStarts.clear();
+            this.recorder.updateControls();
 
     }
 
