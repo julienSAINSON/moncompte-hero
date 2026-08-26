@@ -1,6 +1,6 @@
-# Tests unitaires MonCompteHero
+# Tests MonCompteHero
 
-Ce dossier contient une suite de tests unitaires sans dependance externe (pas de Node, pas de npm).
+Ce dossier contient une suite de tests sans dependance externe (pas de Node, pas de npm), separee en tests unitaires et tests d'integration.
 
 ## Lancer les tests
 
@@ -12,10 +12,11 @@ Ce dossier contient une suite de tests unitaires sans dependance externe (pas de
 ## Contenu
 
 - tests/test-runner.js: mini runner (assertions + rapport)
-- tests/song-menu.test.js: tests unitaires de SongMenu
-- tests/recording.test.js: tests unitaires de ChartRecorder
+- tests/bootstrap.js: stubs/mocks DOM pour charger certains modules en environnement test
+- tests/unit/: tests unitaires (note, battle, arena, supabase, song-menu, recording)
+- tests/integration/: tests d'integration (parcours mode 0/2/3, responsive)
 
 ## Note
 
-Ces tests ciblent la logique metier de modules critiques sans framework.
-Ils sont faciles a etendre pour battle.js et game.js via mocks DOM similaires.
+Ces tests ciblent la logique metier de modules critiques et des parcours fonctionnels majeurs.
+Ils sont faciles a etendre avec de nouveaux cas dans tests/unit/ et tests/integration/.

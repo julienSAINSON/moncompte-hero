@@ -1365,6 +1365,44 @@ body.desktop-device .lane {
    RESPONSIVE MOBILE
 ========================== */
 
+@media (max-width: 900px) {
+
+    #arenaSidePanel {
+
+        position: fixed;
+        top: 8px;
+        left: 8px;
+
+        width: min(45vw, 180px);
+        margin: 0;
+
+        z-index: 15;
+
+        /* Ne doit jamais impacter la zone de jeu ni capter les taps des lanes. */
+        pointer-events: none;
+    }
+
+    #arenaMascot {
+        display: none;
+    }
+
+    #arenaLeaderboard {
+        max-height: 30vh;
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    #arenaLeaderboard h3 {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    #arenaLeaderboardList,
+    #arenaOwnRank {
+        font-size: 13px;
+    }
+}
+
 @media (max-width: 480px) {
 
     #hud {
@@ -1376,6 +1414,14 @@ body.desktop-device .lane {
     #playfield {
         width: 100vw;
         height: calc(100vh - 160px);
+    }
+
+    #arenaSidePanel {
+        width: min(48vw, 165px);
+    }
+
+    #arenaLeaderboard {
+        max-height: 26vh;
     }
 
     #progressContainer {
