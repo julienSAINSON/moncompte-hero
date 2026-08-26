@@ -16,6 +16,7 @@ test("Contrat SQL: tables et RLS critiques presentes", async function () {
     assert.ok(/alter table public\.scores enable row level security/i.test(sql), "RLS scores manquant");
     assert.ok(/alter table public\.battle_rooms enable row level security/i.test(sql), "RLS battle_rooms manquant");
     assert.ok(/alter table public\.battle_live_scores enable row level security/i.test(sql), "RLS battle_live_scores manquant");
+    assert.ok(/create or replace function public\.join_battle_room/i.test(sql), "RPC join_battle_room manquante");
 });
 
 test("Contrat SQL: grants Supabase essentiels presents", async function () {
@@ -24,7 +25,8 @@ test("Contrat SQL: grants Supabase essentiels presents", async function () {
     assert.ok(/grant usage on schema public to anon, authenticated/i.test(sql), "GRANT schema manquant");
     assert.ok(/grant select, insert on public\.scores to anon, authenticated/i.test(sql), "GRANT scores manquant");
     assert.ok(/grant select, insert, update, delete on public\.battle_rooms to anon, authenticated/i.test(sql), "GRANT battle_rooms manquant");
-    assert.ok(/grant select, insert, update, delete on public\.battle_live_scores to anon, authenticated/i.test(sql), "GRANT battle_live_scores manquant");
+    assert.ok(/grant select, update on public\.battle_live_scores to anon, authenticated/i.test(sql), "GRANT battle_live_scores manquant");
+    assert.ok(/grant execute on function public\.join_battle_room\(text, text\) to anon, authenticated/i.test(sql), "GRANT RPC Arena manquant");
 });
 
 test("Contrat SW: app shell contient les modules critiques", async function () {

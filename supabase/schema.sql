@@ -55,6 +55,53 @@ create table if not exists public.battle_live_scores (
     primary key (room_id, player_name)
 );
 
+-- Inscription atomique: verrouille la salle et interdit les arrivées apres Start.
+create or replace function public.join_battle_room(
+    p_room_id text,
+    p_player_name text
+)
+returns table(error_message text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_room public.battle_rooms%rowtype;
+begin
+    insert into public.battle_rooms (id)
+    values (p_room_id)
+    on conflict (id) do nothing;
+
+    select * into v_room
+    from public.battle_rooms
+    where id = p_room_id
+    for update;
+
+    if v_room.status <> 'waiting' then
+        return query select 'La partie est deja commencee.'::text;
+        return;
+    end if;
+
+    if v_room.created_at < now() - interval '30 minutes' then
+        return query select 'Cette salle a expire (duree de vie : 30 minutes).'::text;
+        return;
+    end if;
+
+    insert into public.battle_live_scores (
+        room_id, player_name, score, combo, accuracy
+    ) values (
+        p_room_id, p_player_name, 0, 0, 100
+    ) on conflict (room_id, player_name) do nothing;
+
+    if not found then
+        return query select 'Ce pseudo est deja pris dans cette salle.'::text;
+        return;
+    end if;
+
+    return query select null::text;
+end;
+$$;
+
 alter table public.battle_rooms enable row level security;
 alter table public.battle_live_scores enable row level security;
 
@@ -65,8 +112,15 @@ create policy "public read/write rooms"
     with check (true);
 
 drop policy if exists "public read/write live scores" on public.battle_live_scores;
-create policy "public read/write live scores"
-    on public.battle_live_scores for all
+drop policy if exists "public read live scores" on public.battle_live_scores;
+create policy "public read live scores"
+    on public.battle_live_scores for select
+    using (true)
+;
+
+drop policy if exists "public update live scores" on public.battle_live_scores;
+create policy "public update live scores"
+    on public.battle_live_scores for update
     using (true)
     with check (true);
 
@@ -81,4 +135,5 @@ grant select, insert on public.scores to anon, authenticated;
 grant usage, select on sequence public.scores_id_seq to anon, authenticated;
 
 grant select, insert, update, delete on public.battle_rooms to anon, authenticated;
-grant select, insert, update, delete on public.battle_live_scores to anon, authenticated;
+grant select, update on public.battle_live_scores to anon, authenticated;
+grant execute on function public.join_battle_room(text, text) to anon, authenticated;

@@ -18,22 +18,9 @@ test("Arena joinRoom detecte pseudo deja pris", async function () {
     const manager = createArenaManagerForTest();
 
     manager.isAvailable = function () { return true; };
-    manager.getOrCreateRoom = async function () {
-        return { data: { created_at: new Date().toISOString() } };
-    };
-
     manager.client = {
-        from: function () {
-            return {
-                select: function () { return this; },
-                eq: function () { return this; },
-                maybeSingle: async function () {
-                    return { error: null, data: { player_name: "Taken" } };
-                },
-                insert: async function () {
-                    return { error: null };
-                }
-            };
+        rpc: async function () {
+            return { data: [{ error_message: "Ce pseudo est deja pris dans cette salle." }], error: null };
         }
     };
 
@@ -46,33 +33,36 @@ test("Arena joinRoom reussit et enregistre playerName", async function () {
     const manager = createArenaManagerForTest();
 
     manager.isAvailable = function () { return true; };
-    manager.getOrCreateRoom = async function () {
-        return { data: { created_at: new Date().toISOString() } };
-    };
-
-    let insertCalled = false;
+    let rpcCalled = false;
 
     manager.client = {
-        from: function () {
-            return {
-                select: function () { return this; },
-                eq: function () { return this; },
-                maybeSingle: async function () {
-                    return { error: null, data: null };
-                },
-                insert: async function () {
-                    insertCalled = true;
-                    return { error: null };
-                }
-            };
+        rpc: async function (name, args) {
+            rpcCalled = name === "join_battle_room" &&
+                args.p_room_id === "ABCDE" &&
+                args.p_player_name === "Player One";
+            return { data: [{ error_message: null }], error: null };
         }
     };
 
     const result = await manager.joinRoom("Player One");
 
     assert.equal(result.error, null);
-    assert.equal(insertCalled, true);
+    assert.equal(rpcCalled, true);
     assert.equal(manager.playerName, "Player One");
+});
+
+test("Arena joinRoom refuse une salle deja lancee", async function () {
+    const manager = createArenaManagerForTest();
+    manager.isAvailable = function () { return true; };
+    manager.client = {
+        rpc: async function () {
+            return { data: [{ error_message: "La partie est deja commencee." }], error: null };
+        }
+    };
+
+    const result = await manager.joinRoom("Late Player");
+
+    assert.equal(result.error, "La partie est deja commencee.");
 });
 
 test("Arena getPlayerRank renvoie count+1", async function () {

@@ -50,8 +50,8 @@ class ArenaManager {
     }
 
     /**
-     * Rejoint (ou cree si absente) la salle, avec verification
-     * de l'expiration (30 min) et de l'unicite du pseudo.
+    * Rejoint (ou cree si absente) la salle via une RPC atomique.
+    * La base refuse toute inscription lorsque la salle est deja en jeu.
      * Retourne { error } (error = null si succes).
      */
     async joinRoom(playerName) {
@@ -66,45 +66,30 @@ class ArenaManager {
             return { error: "Entre un pseudo." };
         }
 
-        const room = await this.getOrCreateRoom();
-
-        if (room.error) {
-            return { error: room.error };
+        if (typeof this.client.rpc !== "function") {
+            return { error: "Configuration Arena incomplete." };
         }
 
-        const roomAgeMs = Date.now() - new Date(room.data.created_at).getTime();
-
-        if (roomAgeMs > ARENA_ROOM_TTL_MS) {
-            return { error: "Cette salle a expire (duree de vie : 30 minutes)." };
-        }
-
-        const duplicate = await this.client
-            .from("battle_live_scores")
-            .select("player_name")
-            .eq("room_id", this.roomId)
-            .eq("player_name", name)
-            .maybeSingle();
-
-        if (duplicate.error) {
-            return { error: duplicate.error.message };
-        }
-
-        if (duplicate.data) {
-            return { error: "Ce pseudo est deja pris dans cette salle." };
-        }
-
-        const { error } = await this.client
-            .from("battle_live_scores")
-            .insert({
-                room_id: this.roomId,
-                player_name: name,
-                score: 0,
-                combo: 0,
-                accuracy: 100
-            });
+        const { data, error } = await this.client.rpc(
+            "join_battle_room",
+            {
+                p_room_id: this.roomId,
+                p_player_name: name
+            }
+        );
 
         if (error) {
             return { error: error.message };
+        }
+
+        const result = Array.isArray(data) ? data[0] : data;
+
+        if (!result) {
+            return { error: "Reponse Arena invalide." };
+        }
+
+        if (result.error_message) {
+            return { error: result.error_message };
         }
 
         this.playerName = name;
