@@ -69,6 +69,12 @@ class Note {
 }
 
     isDiagonal() {
+
+        // au clavier, la diagonale est ignorable visuellement : hold classique
+        if (window.inputManager && !window.inputManager.isTouchDevice) {
+            return false;
+        }
+
         return this.toLane !== this.lane;
     }
 

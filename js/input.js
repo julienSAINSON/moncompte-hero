@@ -12,10 +12,11 @@ class InputManager {
         this.pressedPointers = new Map();
 
         const params = new URLSearchParams(window.location.search);
-        const forceTouch = params.get("touch") === "1";
+        const touchParam = params.get("touch");
 
         this.isTouchDevice =
-            forceTouch ||
+            touchParam === "1" ? true :
+            touchParam === "0" ? false :
             ("ontouchstart" in window) ||
             (navigator.maxTouchPoints > 0);
 

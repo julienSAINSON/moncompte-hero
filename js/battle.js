@@ -9,6 +9,10 @@ const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: -3 };
 const BATTLE_PX_PER_POINT = 6; // sensibilite du deplacement de la barre centrale
 const BATTLE_LANE_COLORS = ["#ff5555", "#ffaa00", "#33cc66", "#3399ff"];
 
+function isTouchInputActive() {
+    return !!(window.inputManager && window.inputManager.isTouchDevice);
+}
+
 class BattlePlayer {
 
     constructor(rootEl) {
@@ -46,9 +50,9 @@ class BattlePlayer {
             const element = document.createElement("div");
             element.className = "note lane" + n.lane;
 
-            const toLane = (n.toLane === null || n.toLane === undefined)
-                ? n.lane
-                : n.toLane;
+            const toLane = isTouchInputActive()
+                ? ((n.toLane === null || n.toLane === undefined) ? n.lane : n.toLane)
+                : n.lane; // au clavier, la diagonale est ignorable visuellement : hold classique
 
             if (holdDuration > 0) {
                 element.classList.add(
