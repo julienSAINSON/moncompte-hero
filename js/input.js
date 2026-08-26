@@ -106,6 +106,12 @@ class InputManager {
 
     setupTouchInput() {
 
+        // empeche le menu contextuel declenche par un appui long (hold notes)
+        document.addEventListener(
+            "contextmenu",
+            (event) => event.preventDefault()
+        );
+
         // Les Pointer Events couvrent le tactile, le stylet et la souris.
         document.querySelectorAll(".lane").forEach((laneEl) => {
 

@@ -213,6 +213,10 @@ class Game {
             this.arenaRoomLabel.textContent = "Salle : " + arenaManager.roomId;
             this.arenaJoinScreen.classList.remove("hidden");
 
+            // le panneau (image + classement) reste visible tout au long du mode Arena
+            document.getElementById("arenaSidePanel")
+                .classList.remove("hidden");
+
             if (arenaManager.isGameMaster) {
                 this.setupArenaShareSection();
             }
@@ -619,16 +623,15 @@ class Game {
                 scoreManager.combo,
                 scoreManager.accuracy
             );
-        }, 700);
+        }, 1500);
 
-        document.getElementById("arenaLeaderboard")
-            .classList.remove("hidden");
+        this.arenaPrevRank = null;
 
         this.refreshArenaLeaderboard();
 
         this.arenaLeaderboardTimer = setInterval(
             () => this.refreshArenaLeaderboard(),
-            1000
+            2000
         );
 
     }
@@ -641,34 +644,72 @@ class Game {
         const ownRankEl = document.getElementById("arenaOwnRank");
 
         listEl.innerHTML = "";
+        ownRankEl.textContent = "";
+        ownRankEl.classList.remove("arenaOwnEntry");
 
         let isInTop = false;
+        let currentRank = null;
+        let targetEl = null;
 
-        for (const entry of top) {
+        top.forEach((entry, index) => {
 
             const item = document.createElement("li");
 
             item.textContent = entry.player_name + " - " + entry.score;
 
             if (entry.player_name === arenaManager.playerName) {
-                item.style.color = "#00ff88";
+                item.classList.add("arenaOwnEntry");
                 isInTop = true;
+                currentRank = index + 1;
+                targetEl = item;
             }
 
             listEl.appendChild(item);
 
+        });
+
+        if (!isInTop) {
+
+            currentRank = await arenaManager.getPlayerRank(scoreManager.score);
+
+            ownRankEl.textContent = currentRank
+                ? "#" + currentRank + " " + arenaManager.playerName + " - " + scoreManager.score
+                : "";
+            ownRankEl.classList.add("arenaOwnEntry");
+            targetEl = ownRankEl;
+
         }
 
-        if (isInTop) {
-            ownRankEl.textContent = "";
-            return;
+        if (
+            targetEl &&
+            currentRank !== null &&
+            this.arenaPrevRank !== null &&
+            currentRank !== this.arenaPrevRank
+        ) {
+
+            const improved = currentRank < this.arenaPrevRank;
+            const flashClass = improved ? "arenaRankUp" : "arenaRankDown";
+
+            targetEl.classList.remove("arenaRankUp", "arenaRankDown");
+            void targetEl.offsetWidth; // force le redemarrage de l'animation
+            targetEl.classList.add(flashClass);
+
+            setTimeout(() => {
+                targetEl.classList.remove("arenaRankUp", "arenaRankDown");
+            }, 1000);
+
+            const screenFlash = document.getElementById("arenaRankFlash");
+            screenFlash.classList.remove("arenaRankUp", "arenaRankDown");
+            void screenFlash.offsetWidth; // force le redemarrage de l'animation
+            screenFlash.classList.add(flashClass);
+
+            setTimeout(() => {
+                screenFlash.classList.remove("arenaRankUp", "arenaRankDown");
+            }, 1000);
+
         }
 
-        const rank = await arenaManager.getPlayerRank(scoreManager.score);
-
-        ownRankEl.textContent = rank
-            ? "#" + rank + " " + arenaManager.playerName + " - " + scoreManager.score
-            : "";
+        this.arenaPrevRank = currentRank;
 
     }
 
@@ -712,9 +753,6 @@ class Game {
             clearInterval(this.arenaLeaderboardTimer);
             this.arenaLeaderboardTimer = null;
         }
-
-        document.getElementById("arenaLeaderboard")
-            .classList.add("hidden");
 
     }
 
@@ -1051,6 +1089,10 @@ class Game {
     }
 
     resetRunState() {
+
+        // recalcule la ligne de hit/echelle sur la taille reelle actuelle
+        // (le cache peut etre perime si aucun evenement "resize" ne s'est declenche)
+        renderer._updateLayoutCache();
 
         renderer.hideEndScreen();
 
