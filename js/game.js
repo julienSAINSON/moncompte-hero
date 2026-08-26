@@ -188,6 +188,16 @@ class Game {
             this.playButton.textContent = "Start (Bataille)";
             document.getElementById("shareScoreButton")
                 .classList.add("hidden");
+        } else {
+            // en mode 0/1, la selection via le menu "Musiques" est reservee au mode bataille :
+            // on charge directement la musique par defaut, comme avant l'ajout du menu.
+            this.selectedSong = {
+                id: "default",
+                title: "Musique par defaut",
+                folder: "assets/default",
+                music: "saisis ton sciforma.mp3",
+                chart: "partition.json"
+            };
         }
 
         this.setAppMode("play");
@@ -242,10 +252,10 @@ class Game {
 
         const hasSong = !!this.selectedSong;
 
-        // le bouton Menu reste visible pour permettre de changer de musique
-        this.menuButton.classList.remove("hidden");
+        // le bouton "Musiques" n'est propose qu'en mode bataille
+        this.menuButton.classList.toggle("hidden", !this.battleMode);
         this.playButton.classList.toggle("hidden", !hasSong);
-        this.selectedSongInfo.classList.toggle("hidden", !hasSong);
+        this.selectedSongInfo.classList.toggle("hidden", !hasSong || !this.battleMode);
 
     }
 
