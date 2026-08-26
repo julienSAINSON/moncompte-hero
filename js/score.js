@@ -6,6 +6,16 @@ class ScoreManager {
 
     }
 
+    getComboMultiplier(combo) {
+
+        if (combo >= 50) return 4;
+        if (combo >= 25) return 3;
+        if (combo >= 10) return 2;
+
+        return 1;
+
+    }
+
     reset() {
 
         this.score = 0;
@@ -20,18 +30,25 @@ class ScoreManager {
 
         this.accuracy = 100;
 
+        // multiplicateur affiche a l'ecran suite au dernier jugement (null = rien a afficher)
+        this.lastMultiplierChange = null;
+
         this.updateHUD();
 
     }
 
     addJudgement(judgement) {
 
+        const multiplierBefore = this.getComboMultiplier(this.combo);
+
+        this.lastMultiplierChange = null;
+
         switch (judgement) {
 
             case "perfect":
-                this.score += 300;
                 this.combo++;
                 this.consecutiveMisses = 0;
+                this.score += 300 * this.getComboMultiplier(this.combo);
 if (this.combo > this.bestCombo) {
     this.bestCombo = this.combo;
 }
@@ -39,9 +56,9 @@ if (this.combo > this.bestCombo) {
                 break;
 
             case "great":
-                this.score += 200;
                 this.combo++;
                 this.consecutiveMisses = 0;
+                this.score += 200 * this.getComboMultiplier(this.combo);
 if (this.combo > this.bestCombo) {
     this.bestCombo = this.combo;
 }
@@ -49,9 +66,9 @@ if (this.combo > this.bestCombo) {
                 break;
 
             case "good":
-                this.score += 100;
                 this.combo++;
                 this.consecutiveMisses = 0;
+                this.score += 100 * this.getComboMultiplier(this.combo);
 if (this.combo > this.bestCombo) {
     this.bestCombo = this.combo;
 }
@@ -63,6 +80,21 @@ if (this.combo > this.bestCombo) {
                 this.consecutiveMisses++;
                 this.miss++;
                 break;
+
+        }
+
+        const multiplierAfter = this.getComboMultiplier(this.combo);
+
+        if (judgement === "miss") {
+
+            // signale le retour a x1 uniquement si un multiplicateur etait actif
+            if (multiplierBefore !== 1) {
+                this.lastMultiplierChange = 1;
+            }
+
+        } else if (multiplierAfter !== multiplierBefore) {
+
+            this.lastMultiplierChange = multiplierAfter;
 
         }
 

@@ -53,6 +53,88 @@
     color:#ff4444;
 }
 
+.multiplierText {
+
+    position: absolute;
+
+    transform: translateX(-50%);
+
+    font-size: 46px;
+    font-weight: bold;
+    color: #ff66ff;
+    text-shadow: 0 0 14px #ff66ff;
+
+    pointer-events: none;
+
+    animation: multiplierFloat 1.4s forwards;
+}
+
+@keyframes multiplierFloat {
+
+    0% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+
+    60% {
+        opacity: 1;
+        transform: translate(-50%, -30px) scale(1.2);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -70px) scale(1.3);
+    }
+
+}
+
+.multiplierText.reset {
+
+    color: #ff4444;
+    text-shadow: 0 0 14px #ff4444;
+    animation: multiplierFloatShake 1.4s forwards;
+
+}
+
+@keyframes multiplierFloatShake {
+
+    0% {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+
+    8% {
+        transform: translate(calc(-50% - 8px), 0) scale(1);
+    }
+
+    16% {
+        transform: translate(calc(-50% + 8px), 0) scale(1);
+    }
+
+    24% {
+        transform: translate(calc(-50% - 8px), 0) scale(1);
+    }
+
+    32% {
+        transform: translate(calc(-50% + 8px), 0) scale(1);
+    }
+
+    40% {
+        transform: translate(-50%, 0) scale(1);
+    }
+
+    60% {
+        opacity: 1;
+        transform: translate(-50%, -30px) scale(1.2);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -70px) scale(1.3);
+    }
+
+}
+
 #hitEffect {
 
     position: absolute;

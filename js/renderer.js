@@ -62,6 +62,28 @@ showJudgement(text){
 
 }
 
+showMultiplierEffect(lane, multiplier) {
+
+    const div = document.createElement("div");
+
+    // x1 apres un miss = seul cas ou le multiplicateur redescend a 1
+    div.className = "multiplierText" + (multiplier === 1 ? " reset" : "");
+    div.textContent = "x" + multiplier;
+
+    const laneWidth = this.playfield.clientWidth / 4;
+    const x = lane * laneWidth + laneWidth / 2;
+
+    div.style.left = x + "px";
+    div.style.bottom = (this.playfield.clientHeight - this.hitLineY) + "px";
+
+    this.playfield.appendChild(div);
+
+    setTimeout(() => {
+        div.remove();
+    }, 1400);
+
+}
+
 showHitEffect(type) {
 
     const effect =

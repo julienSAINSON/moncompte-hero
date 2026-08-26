@@ -816,6 +816,13 @@ class Game {
                 );
 renderer.showHitEffect("miss");
 
+                if (scoreManager.lastMultiplierChange !== null) {
+                    renderer.showMultiplierEffect(
+                        note.lane,
+                        scoreManager.lastMultiplierChange
+                    );
+                }
+
                 if (
                     scoreManager.consecutiveMisses >=
                     this.maxConsecutiveMisses
@@ -960,6 +967,13 @@ if (this.mode === "record") {
 renderer.showHitEffect(judgement);
 renderer.showJudgement(judgement);
 
+        if (scoreManager.lastMultiplierChange !== null) {
+            renderer.showMultiplierEffect(
+                bestNote.lane,
+                scoreManager.lastMultiplierChange
+            );
+        }
+
     }
 
     releaseLane(lane, endLane = lane, requireExactLane = false) {
@@ -1003,6 +1017,13 @@ renderer.showJudgement(judgement);
         scoreManager.addJudgement(judgement);
         renderer.showHitEffect(judgement);
         renderer.showJudgement(judgement);
+
+        if (scoreManager.lastMultiplierChange !== null) {
+            renderer.showMultiplierEffect(
+                heldNote.lane,
+                scoreManager.lastMultiplierChange
+            );
+        }
 
     }
 
