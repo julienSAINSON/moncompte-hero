@@ -34,6 +34,37 @@ class Game {
         this.playButton =
             document.getElementById("playButton");
 
+        this.arenaCreateScreen =
+            document.getElementById("arenaCreateScreen");
+
+        this.arenaCreateButton =
+            document.getElementById("arenaCreateButton");
+
+        this.arenaCreateButton.addEventListener(
+            "click",
+            () => arenaManager.createAndEnterRoom()
+        );
+
+        this.arenaJoinScreen =
+            document.getElementById("arenaJoinScreen");
+
+        this.arenaRoomLabel =
+            document.getElementById("arenaRoomLabel");
+
+        this.arenaNameInput =
+            document.getElementById("arenaNameInput");
+
+        this.arenaJoinButton =
+            document.getElementById("arenaJoinButton");
+
+        this.arenaJoinStatus =
+            document.getElementById("arenaJoinStatus");
+
+        this.arenaJoinButton.addEventListener(
+            "click",
+            () => this.joinArenaRoom()
+        );
+
         this.menuButton =
             document.getElementById("menuButton");
 
@@ -174,6 +205,23 @@ class Game {
         // Le mode bataille (2 joueurs) se lance via le parametre d'URL ?mode=2
         this.battleMode = urlParams.get("mode") === "2";
 
+        // Le mode Battle Arena (salle multijoueur en ligne) se lance via ?mode=3&room=XXX
+        this.arenaMode =
+            urlParams.get("mode") === "3" && arenaManager.isActive();
+
+        if (this.arenaMode) {
+            this.arenaRoomLabel.textContent = "Salle : " + arenaManager.roomId;
+            this.arenaJoinScreen.classList.remove("hidden");
+
+            if (arenaManager.isGameMaster) {
+                this.setupArenaShareSection();
+            }
+
+        } else if (urlParams.get("mode") === "3" && arenaManager.isGameMaster) {
+            // le maitre du jeu n'a pas encore de salle : on lui propose d'en creer une
+            this.arenaCreateScreen.classList.remove("hidden");
+        }
+
         this.modeSelector.classList.toggle(
             "developerHidden",
             !this.developerMode
@@ -186,6 +234,11 @@ class Game {
 
         if (this.battleMode) {
             this.playButton.textContent = "Start (Bataille)";
+            document.getElementById("shareScoreButton")
+                .classList.add("hidden");
+        } else if (this.arenaMode) {
+            // en Battle Arena, seul le maitre du jeu choisit la musique via le menu
+            this.playButton.textContent = "Start (Arena)";
             document.getElementById("shareScoreButton")
                 .classList.add("hidden");
         } else {
@@ -243,7 +296,15 @@ class Game {
 
     updatePlaySelectionUI() {
 
-        if (!this.battleMode && this.appMode !== "play") {
+        if (this.arenaMode && !arenaManager.isGameMaster) {
+            // en Battle Arena, seul le maitre du jeu a la main sur la selection/lancement
+            this.menuButton.classList.add("hidden");
+            this.playButton.classList.add("hidden");
+            this.selectedSongInfo.classList.add("hidden");
+            return;
+        }
+
+        if (!this.battleMode && !this.arenaMode && this.appMode !== "play") {
             this.menuButton.classList.add("hidden");
             this.playButton.classList.add("hidden");
             this.selectedSongInfo.classList.add("hidden");
@@ -251,11 +312,140 @@ class Game {
         }
 
         const hasSong = !!this.selectedSong;
+        const showsMenu = this.battleMode || this.arenaMode;
 
-        // le bouton "Musiques" n'est propose qu'en mode bataille
-        this.menuButton.classList.toggle("hidden", !this.battleMode);
+        // le bouton "Musiques" n'est propose qu'en mode bataille/arena
+        this.menuButton.classList.toggle("hidden", !showsMenu);
         this.playButton.classList.toggle("hidden", !hasSong);
-        this.selectedSongInfo.classList.toggle("hidden", !hasSong || !this.battleMode);
+        this.selectedSongInfo.classList.toggle("hidden", !hasSong || !showsMenu);
+
+    }
+
+    //--------------------------------------------------
+    // Battle Arena (salle multijoueur en ligne)
+    //--------------------------------------------------
+
+    setupArenaShareSection() {
+
+        const shareSection = document.getElementById("arenaShareSection");
+        const copyButton = document.getElementById("arenaCopyLinkButton");
+        const copyStatus = document.getElementById("arenaCopyStatus");
+        const qrContainer = document.getElementById("arenaQrCode");
+
+        const playerUrl = new URL(window.location.href);
+        playerUrl.searchParams.delete("gm");
+        const playerUrlString = playerUrl.toString();
+
+        shareSection.classList.remove("hidden");
+
+        copyButton.addEventListener("click", async () => {
+
+            try {
+                await navigator.clipboard.writeText(playerUrlString);
+                copyStatus.textContent = "Lien copie !";
+            } catch (error) {
+                copyStatus.textContent = "Copie impossible sur cet appareil.";
+            }
+
+        });
+
+        if (window.QRCode) {
+
+            new window.QRCode(qrContainer, {
+                text: playerUrlString,
+                width: 180,
+                height: 180
+            });
+
+        }
+
+    }
+
+    async joinArenaRoom() {
+
+        this.arenaJoinButton.disabled = true;
+        this.arenaJoinStatus.textContent = "Connexion...";
+
+        const { error } = await arenaManager.joinRoom(
+            this.arenaNameInput.value
+        );
+
+        this.arenaJoinButton.disabled = false;
+
+        if (error) {
+            this.arenaJoinStatus.textContent = error;
+            return;
+        }
+
+        this.arenaJoinScreen.classList.add("hidden");
+
+        if (!arenaManager.isGameMaster) {
+            document.getElementById("arenaWaitingScreen")
+                .classList.remove("hidden");
+            this.pollArenaRoomStart();
+        }
+
+    }
+
+    pollArenaRoomStart() {
+
+        this.arenaPollTimer = setInterval(async () => {
+
+            const { data, error } = await arenaManager.getRoomStatus();
+
+            if (error || !data || data.status !== "playing") {
+                return;
+            }
+
+            clearInterval(this.arenaPollTimer);
+
+            document.getElementById("arenaWaitingScreen")
+                .classList.add("hidden");
+
+            await this.startAsArenaPlayer(data.song_id);
+
+        }, 1000);
+
+    }
+
+    async resolveSongById(songId) {
+
+        if (this.songs.length === 0) {
+
+            try {
+
+                const response = await fetch(
+                    "assets/songs/manifest.json",
+                    { cache: "no-store" }
+                );
+
+                this.songs = response.ok ? await response.json() : [];
+
+            } catch (error) {
+
+                console.error(error);
+                this.songs = [];
+
+            }
+
+        }
+
+        return this.songs.find((song) => song.id === songId) || null;
+
+    }
+
+    async startAsArenaPlayer(songId) {
+
+        const song = await this.resolveSongById(songId);
+
+        if (!song) {
+            alert("Musique introuvable pour cette salle.");
+            return;
+        }
+
+        this.selectedSong = song;
+
+        this.start();
 
     }
 
@@ -358,6 +548,11 @@ class Game {
             return;
         }
 
+        if (this.arenaMode && arenaManager.isGameMaster) {
+            // signale aux autres joueurs que la partie demarre
+            await arenaManager.startRoom(this.selectedSong.id);
+        }
+
         this.mode = "play";
 
         this.resetRunState();
@@ -403,8 +598,123 @@ class Game {
         this.preRollDuration = this.getPreRollDuration();
         this.running = true;
 
+        this.startArenaScorePush();
+
         this.startCountdown(() => this.startPreRoll());
         this.loop();
+
+    }
+
+    startArenaScorePush() {
+
+        if (!this.arenaMode) {
+            return;
+        }
+
+        this.stopArenaScorePush();
+
+        this.arenaPushTimer = setInterval(() => {
+            arenaManager.pushScore(
+                scoreManager.score,
+                scoreManager.combo,
+                scoreManager.accuracy
+            );
+        }, 700);
+
+        document.getElementById("arenaLeaderboard")
+            .classList.remove("hidden");
+
+        this.refreshArenaLeaderboard();
+
+        this.arenaLeaderboardTimer = setInterval(
+            () => this.refreshArenaLeaderboard(),
+            1000
+        );
+
+    }
+
+    async refreshArenaLeaderboard() {
+
+        const top = await arenaManager.fetchLeaderboard(10);
+
+        const listEl = document.getElementById("arenaLeaderboardList");
+        const ownRankEl = document.getElementById("arenaOwnRank");
+
+        listEl.innerHTML = "";
+
+        let isInTop = false;
+
+        for (const entry of top) {
+
+            const item = document.createElement("li");
+
+            item.textContent = entry.player_name + " - " + entry.score;
+
+            if (entry.player_name === arenaManager.playerName) {
+                item.style.color = "#00ff88";
+                isInTop = true;
+            }
+
+            listEl.appendChild(item);
+
+        }
+
+        if (isInTop) {
+            ownRankEl.textContent = "";
+            return;
+        }
+
+        const rank = await arenaManager.getPlayerRank(scoreManager.score);
+
+        ownRankEl.textContent = rank
+            ? "#" + rank + " " + arenaManager.playerName + " - " + scoreManager.score
+            : "";
+
+    }
+
+    async showArenaFinalRanking() {
+
+        const section = document.getElementById("arenaFinalRanking");
+        const listEl = document.getElementById("arenaFinalRankingList");
+
+        section.classList.remove("hidden");
+        listEl.innerHTML = "<li>Chargement...</li>";
+
+        const scores = await arenaManager.fetchLeaderboard(50);
+
+        listEl.innerHTML = "";
+
+        scores.forEach((entry) => {
+
+            const item = document.createElement("li");
+
+            item.textContent = entry.player_name + " - " + entry.score;
+
+            if (entry.player_name === arenaManager.playerName) {
+                item.style.color = "#00ff88";
+                item.style.fontWeight = "bold";
+            }
+
+            listEl.appendChild(item);
+
+        });
+
+    }
+
+    stopArenaScorePush() {
+
+        if (this.arenaPushTimer) {
+            clearInterval(this.arenaPushTimer);
+            this.arenaPushTimer = null;
+        }
+
+        if (this.arenaLeaderboardTimer) {
+            clearInterval(this.arenaLeaderboardTimer);
+            this.arenaLeaderboardTimer = null;
+        }
+
+        document.getElementById("arenaLeaderboard")
+            .classList.add("hidden");
 
     }
 
@@ -824,6 +1134,7 @@ renderer.showHitEffect("miss");
                 }
 
                 if (
+                    !this.arenaMode &&
                     scoreManager.consecutiveMisses >=
                     this.maxConsecutiveMisses
                 ) {
@@ -1098,11 +1409,15 @@ if (this.mode === "record") {
 
         }
 
+        this.stopArenaScorePush();
+
         this.updateRecordingControls();
 
         renderer.showEndScreen();
 
-        if (this.mode === "play") {
+        if (this.arenaMode) {
+            this.showArenaFinalRanking();
+        } else if (this.mode === "play") {
             this.prepareLeaderboardUI();
         }
 
@@ -1113,6 +1428,8 @@ if (this.mode === "record") {
         this.running = false;
 
         audioManager.pause();
+
+        this.stopArenaScorePush();
 
         renderer.showEndScreen(
             "Echec de la partie",
@@ -1230,6 +1547,8 @@ if (this.mode === "record") {
             );
 
         }
+
+        this.stopArenaScorePush();
 
         audioManager.stop();
 

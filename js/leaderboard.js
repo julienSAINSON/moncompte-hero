@@ -17,6 +17,9 @@ class LeaderboardManager {
                 SUPABASE_URL,
                 SUPABASE_ANON_KEY
             );
+
+            // reutilise dans arena.js (mode Battle Arena) pour eviter un 2e client
+            window.supabaseClient = this.client;
         }
 
     }

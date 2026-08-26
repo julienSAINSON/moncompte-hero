@@ -1,4 +1,4 @@
-const CACHE_NAME = "moncompte-hero-v1";
+const CACHE_NAME = "moncompte-hero-v11";
 const APP_SHELL = [
     "./",
     "index.html",

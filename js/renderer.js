@@ -150,6 +150,7 @@ showHitEffect(type) {
 
         this.endScreen.classList.add("hidden");
         this.shareStatus.textContent = "";
+        document.getElementById("arenaFinalRanking").classList.add("hidden");
 
     }
 
