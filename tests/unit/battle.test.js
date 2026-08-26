@@ -71,6 +71,18 @@ test("Battle agrandit la zone du joueur qui pousse la barre", function () {
     );
 });
 
+test("Battle preserve un espace minimal pour les commandes de chaque joueur", function () {
+    battleGame.updateLayoutCache();
+    battleGame.top.score = (battleGame.maxShift - 1) / 0.03;
+    battleGame.bottom.score = 0;
+
+    battleGame.updateDivider();
+
+    assert.ok(
+        parseFloat(battleGame.bottom.root.style.flexBasis) >= 170
+    );
+});
+
 test("Battle status panels affichent score/combo pres de la barre", function () {
     battleGame.top.score = 800;
     battleGame.top.combo = 5;

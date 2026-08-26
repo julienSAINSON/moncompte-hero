@@ -4,7 +4,7 @@
 
 const BATTLE_HIT_WINDOW = 0.10;
 const BATTLE_HOLD_START_WINDOW = 0.15;
-const BATTLE_EDGE_MARGIN = 100; // distance (px) entre le bord de l'ecran et la ligne verte
+const BATTLE_MIN_HALF_HEIGHT = 170;
 const BATTLE_POINTS = { perfect: 3, great: 2, good: 1, miss: -3 };
 const BATTLE_SCORE_PER_BALANCE = 120;
 const BATTLE_SCORE_PER_COMBO = 40;
@@ -469,7 +469,10 @@ class BattleGame {
 
         this.fieldHeight = this.field.clientHeight;
         this.centerY = this.fieldHeight / 2;
-        this.maxShift = Math.max(0, this.centerY - BATTLE_EDGE_MARGIN);
+        this.maxShift = Math.max(
+            0,
+            this.centerY - BATTLE_MIN_HALF_HEIGHT
+        );
 
     }
 
