@@ -103,6 +103,30 @@ test("Responsive tablette 768x1024: panneau Arena compact", async function () {
     assert.ok(result.mascotHeight <= 1, "Mascotte doit etre masquee en tablette");
 });
 
+test("Responsive tablette tactile: guide J1 battle visible", async function () {
+    const frame = await loadArenaFrame(768, 1024);
+
+    try {
+        const doc = frame.contentDocument;
+        const battlefield = doc.getElementById("battlefield");
+        const bottomGuide = doc.querySelector("#battleBottom .battleKeyGuide");
+
+        doc.getElementById("menu").classList.add("hidden");
+        doc.getElementById("hud").classList.add("hidden");
+        doc.getElementById("game").classList.add("hidden");
+        doc.getElementById("progressContainer").classList.add("hidden");
+        battlefield.classList.remove("hidden");
+
+        const guideRect = bottomGuide.getBoundingClientRect();
+        const fieldRect = battlefield.getBoundingClientRect();
+
+        assert.ok(guideRect.bottom <= fieldRect.bottom + 0.5);
+        assert.ok(guideRect.top >= fieldRect.top);
+    } finally {
+        cleanupFrame(frame);
+    }
+});
+
 test("Responsive desktop 1366x768: panneau Arena desktop conserve", async function () {
     const result = await inspectArenaLayout(1366, 768);
 
