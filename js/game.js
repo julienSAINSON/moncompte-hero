@@ -242,7 +242,8 @@ class Game {
 
         const hasSong = !!this.selectedSong;
 
-        this.menuButton.classList.toggle("hidden", hasSong);
+        // le bouton Menu reste visible pour permettre de changer de musique
+        this.menuButton.classList.remove("hidden");
         this.playButton.classList.toggle("hidden", !hasSong);
         this.selectedSongInfo.classList.toggle("hidden", !hasSong);
 
