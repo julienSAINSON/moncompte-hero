@@ -76,6 +76,23 @@ class Game {
         this.restartButton =
             document.getElementById("restartButton");
 
+        this.playerNameInput =
+            document.getElementById("playerNameInput");
+
+        this.saveScoreButton =
+            document.getElementById("saveScoreButton");
+
+        this.saveScoreStatus =
+            document.getElementById("saveScoreStatus");
+
+        this.leaderboardList =
+            document.getElementById("leaderboardList");
+
+        this.saveScoreButton.addEventListener(
+            "click",
+            () => this.saveScore()
+        );
+
         this.playButton.addEventListener(
             "click",
             () => this.start()
@@ -1053,6 +1070,10 @@ if (this.mode === "record") {
 
         renderer.showEndScreen();
 
+        if (this.mode === "play") {
+            this.prepareLeaderboardUI();
+        }
+
     }
 
     endForConsecutiveMisses() {
@@ -1066,6 +1087,97 @@ if (this.mode === "record") {
             "Tu as enchaine " + this.maxConsecutiveMisses +
             " fautes. Recommence et ameliore-toi !"
         );
+
+        // le score ne peut etre enregistre que si la musique va au bout
+        document.getElementById("leaderboardSection")
+            .classList.add("hidden");
+
+    }
+
+    //--------------------------------------------------
+    // Classement (Supabase)
+    //--------------------------------------------------
+
+    prepareLeaderboardUI() {
+
+        const available =
+            !!this.selectedSong && leaderboardManager.isAvailable();
+
+        document.getElementById("leaderboardSection")
+            .classList.toggle("hidden", !this.selectedSong);
+
+        this.playerNameInput.value = "";
+        this.saveScoreStatus.textContent = available
+            ? ""
+            : "Classement indisponible (pas de connexion).";
+        this.saveScoreButton.disabled = !available;
+
+        this.refreshLeaderboard();
+
+    }
+
+    async saveScore() {
+
+        if (!this.selectedSong || !leaderboardManager.isAvailable()) {
+            return;
+        }
+
+        const name = this.playerNameInput.value.trim();
+
+        if (!name) {
+            this.saveScoreStatus.textContent = "Entre un pseudo d'abord.";
+            return;
+        }
+
+        this.saveScoreButton.disabled = true;
+        this.saveScoreStatus.textContent = "Enregistrement...";
+
+        const { error } = await leaderboardManager.submitScore(
+            this.selectedSong.id,
+            name,
+            scoreManager.score,
+            scoreManager.accuracy,
+            scoreManager.bestCombo
+        );
+
+        this.saveScoreButton.disabled = false;
+
+        if (error) {
+            this.saveScoreStatus.textContent = "Erreur : " + error;
+            return;
+        }
+
+        this.saveScoreStatus.textContent = "Score enregistre !";
+
+        this.refreshLeaderboard();
+
+    }
+
+    async refreshLeaderboard() {
+
+        this.leaderboardList.innerHTML = "";
+
+        if (!this.selectedSong || !leaderboardManager.isAvailable()) {
+            return;
+        }
+
+        const scores = await leaderboardManager.fetchTopScores(
+            this.selectedSong.id,
+            10
+        );
+
+        for (const entry of scores) {
+
+            const item = document.createElement("li");
+
+            item.textContent =
+                entry.player_name + " - " + entry.score + " pts (" +
+                Number(entry.accuracy).toFixed(2) + "%, combo " +
+                entry.best_combo + ")";
+
+            this.leaderboardList.appendChild(item);
+
+        }
 
     }
 
