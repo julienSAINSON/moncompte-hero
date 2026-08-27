@@ -29,5 +29,16 @@
         "charts": {
             "normal": "charts/normal.json"
         }
+    },
+    {
+        "id": "saga",
+        "defaultDifficulty": "normal",
+        "title": "SAJA BOYS - Your Idol",
+        "folder": "assets/songs/saga",
+        "music": "music.mp3",
+        "charts": {
+            "easy": "charts/easy.json",
+            "normal": "charts/normal.json"
+        }
     }
 ]
