@@ -1,4 +1,4 @@
-const CACHE_NAME = "moncompte-hero-v67";
+const CACHE_NAME = "moncompte-hero-v69";
 const APP_SHELL = [
     "./",
     "index.html",
@@ -16,7 +16,7 @@ const APP_SHELL = [
     "js/recording.js",
     "js/game.js",
     "assets/songs/manifest.json",
-    "assets/songs/saisis-ton-sciforma/chart.json",
+    "assets/songs/saisis-ton-sciforma/charts/normal.json",
     "assets/songs/saisis-ton-sciforma/music.mp3"
 ];
 

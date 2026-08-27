@@ -18,8 +18,14 @@
 ## 🎵 Menu de sélection de musique
 
 - Bouton **"Musiques"** (popin plein écran par-dessus la piste) permettant de choisir une chanson dans une liste, disponible uniquement en **mode bataille**.
-- Arborescence dédiée : `assets/songs/<nom-du-morceau>/music.mp3` + `chart.json`, indexée par `assets/songs/manifest.json`.
+- Arborescence dédiée : `assets/songs/<nom-du-morceau>/music.mp3` + `charts/<difficulte>.json`, indexée par `assets/songs/manifest.json`.
 - En mode 0/1, la chanson portant `"default": true` dans `assets/songs/manifest.json` est chargée automatiquement, sans passer par le menu.
+
+## 🎚️ Difficultés de partition
+
+- Chaque chanson peut déclarer ses niveaux dans `charts` du manifest, avec `defaultDifficulty` pour le niveau sélectionné initialement.
+- Les niveaux disponibles sont affichés sous forme de sélecteur `Easy`, `Normal`, `Hard`; un niveau sans fichier de partition reste indisponible.
+- En Arena, le GM choisit la difficulté avant le lancement; ce choix est enregistré dans la salle et appliqué à tous les joueurs.
 
 ## ↗️ Notes en diagonale (hold notes obliques)
 

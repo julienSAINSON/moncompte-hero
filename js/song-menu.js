@@ -74,6 +74,50 @@ class SongMenu {
 
     }
 
+    getAvailableDifficulties(song) {
+
+        if (song?.charts && typeof song.charts === "object") {
+            return Object.keys(song.charts);
+        }
+
+        return song?.chart ? ["normal"] : [];
+
+    }
+
+    resolveDifficulty(song, requestedDifficulty = null) {
+
+        const difficulties = this.getAvailableDifficulties(song);
+
+        if (requestedDifficulty && difficulties.includes(requestedDifficulty)) {
+            return requestedDifficulty;
+        }
+
+        if (
+            song?.defaultDifficulty &&
+            difficulties.includes(song.defaultDifficulty)
+        ) {
+            return song.defaultDifficulty;
+        }
+
+        return difficulties[0] || null;
+
+    }
+
+    resolveChart(song, requestedDifficulty = null) {
+
+        const difficulty = this.resolveDifficulty(song, requestedDifficulty);
+
+        if (!difficulty) {
+            return null;
+        }
+
+        return {
+            difficulty,
+            path: song.charts?.[difficulty] || song.chart
+        };
+
+    }
+
     async open(currentSongId = null) {
 
         const loaded = await this.ensureSongsLoaded();

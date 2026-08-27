@@ -12,6 +12,7 @@ test("Contrat SQL: tables et RLS critiques presentes", async function () {
     assert.ok(/create table if not exists public\.scores/i.test(sql), "Table scores manquante");
     assert.ok(/create table if not exists public\.battle_rooms/i.test(sql), "Table battle_rooms manquante");
     assert.ok(/create table if not exists public\.battle_live_scores/i.test(sql), "Table battle_live_scores manquante");
+    assert.ok(/difficulty text not null default 'normal'/i.test(sql), "Colonne difficulty Arena manquante");
 
     assert.ok(/alter table public\.scores enable row level security/i.test(sql), "RLS scores manquant");
     assert.ok(/alter table public\.battle_rooms enable row level security/i.test(sql), "RLS battle_rooms manquant");

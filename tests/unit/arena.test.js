@@ -65,6 +65,32 @@ test("Arena joinRoom refuse une salle deja lancee", async function () {
     assert.equal(result.error, "La partie est deja commencee.");
 });
 
+test("Arena startRoom enregistre la difficulte choisie", async function () {
+    const manager = createArenaManagerForTest();
+    manager.isAvailable = function () { return true; };
+    let updateData = null;
+    const query = {
+        update: function (data) {
+            updateData = data;
+            return this;
+        },
+        eq: async function () {
+            return { error: null };
+        }
+    };
+    manager.client = {
+        from: function () {
+            return query;
+        }
+    };
+
+    const result = await manager.startRoom("song-a", "hard");
+
+    assert.equal(result.error, null);
+    assert.equal(updateData.song_id, "song-a");
+    assert.equal(updateData.difficulty, "hard");
+});
+
 test("Arena getPlayerRank renvoie count+1", async function () {
     const manager = createArenaManagerForTest();
     manager.playerName = "P1";

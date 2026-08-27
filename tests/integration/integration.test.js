@@ -94,13 +94,19 @@ test("Integration mode 2: start declenche startBattle avec la chanson selectionn
             title: "Test Song",
             folder: "assets/songs/test-song",
             music: "music.mp3",
-            chart: "chart.json"
+            defaultDifficulty: "normal",
+            charts: {
+                easy: "charts/easy.json",
+                normal: "charts/normal.json",
+                hard: "charts/hard.json"
+            }
         });
+        cw.game.selectDifficulty("hard");
 
         await cw.game.start();
 
         assert.ok(!!called, "battleGame.start doit etre appele");
-        assert.equal(called.chartPath, "assets/songs/test-song/chart.json");
+        assert.equal(called.chartPath, "assets/songs/test-song/charts/hard.json");
         assert.equal(called.musicPath, "assets/songs/test-song/music.mp3");
 
         assert.ok(isHidden(doc.getElementById("hud")), "HUD doit etre masque en battle");

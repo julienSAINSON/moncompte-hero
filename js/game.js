@@ -78,11 +78,21 @@ class Game {
             document.getElementById("selectedSongInfo");
 
         this.selectedSong = null;
+        this.selectedDifficulty = "normal";
         this.songMenu = new SongMenu({
             overlay: this.songListOverlay,
             listEl: this.songListEl,
             infoEl: this.selectedSongInfo,
             onSelect: (song) => this.selectSong(song)
+        });
+
+        this.difficultySelector =
+            document.getElementById("difficultySelector");
+
+        this.difficultySelector.querySelectorAll("button").forEach((button) => {
+            button.addEventListener("click", () => {
+                this.selectDifficulty(button.dataset.difficulty);
+            });
         });
 
         this.modeSelector =
@@ -265,6 +275,7 @@ class Game {
         }
 
         this.selectedSong = song;
+        this.selectedDifficulty = this.songMenu.resolveDifficulty(song);
         this.updatePlaySelectionUI();
 
     }
@@ -280,6 +291,7 @@ class Game {
             this.menuButton.classList.add("hidden");
             this.playButton.classList.add("hidden");
             this.selectedSongInfo.classList.add("hidden");
+            this.difficultySelector.classList.add("hidden");
             return;
         }
 
@@ -287,6 +299,7 @@ class Game {
             this.menuButton.classList.add("hidden");
             this.playButton.classList.add("hidden");
             this.selectedSongInfo.classList.add("hidden");
+            this.difficultySelector.classList.add("hidden");
             return;
         }
 
@@ -297,6 +310,66 @@ class Game {
         this.menuButton.classList.toggle("hidden", !showsMenu);
         this.playButton.classList.toggle("hidden", !hasSong);
         this.selectedSongInfo.classList.toggle("hidden", !hasSong || !showsMenu);
+        this.difficultySelector.classList.toggle("hidden", !hasSong);
+        this.renderDifficultySelector();
+
+    }
+
+    renderDifficultySelector() {
+
+        if (!this.selectedSong) {
+            return;
+        }
+
+        const available = this.songMenu.getAvailableDifficulties(this.selectedSong);
+
+        this.difficultySelector.querySelectorAll("button").forEach((button) => {
+            const difficulty = button.dataset.difficulty;
+            const isAvailable = available.includes(difficulty);
+
+            button.disabled = !isAvailable;
+            button.classList.toggle(
+                "active",
+                difficulty === this.selectedDifficulty
+            );
+        });
+
+    }
+
+    selectDifficulty(difficulty) {
+
+        if (!this.selectedSong) {
+            return;
+        }
+
+        const resolved = this.songMenu.resolveDifficulty(
+            this.selectedSong,
+            difficulty
+        );
+
+        if (!resolved) {
+            return;
+        }
+
+        this.selectedDifficulty = resolved;
+        this.renderDifficultySelector();
+
+    }
+
+    getSelectedChartPath() {
+
+        const chart = this.songMenu.resolveChart(
+            this.selectedSong,
+            this.selectedDifficulty
+        );
+
+        if (!chart) {
+            return null;
+        }
+
+        this.selectedDifficulty = chart.difficulty;
+
+        return encodeURI(this.selectedSong.folder + "/" + chart.path);
 
     }
 
@@ -381,7 +454,7 @@ class Game {
             document.getElementById("arenaWaitingScreen")
                 .classList.add("hidden");
 
-            await this.startAsArenaPlayer(data.song_id);
+            await this.startAsArenaPlayer(data.song_id, data.difficulty);
 
         }, 1000);
 
@@ -393,7 +466,7 @@ class Game {
 
     }
 
-    async startAsArenaPlayer(songId) {
+    async startAsArenaPlayer(songId, difficulty) {
 
         const song = await this.resolveSongById(songId);
 
@@ -403,6 +476,7 @@ class Game {
         }
 
         this.selectedSong = song;
+        this.selectedDifficulty = this.songMenu.resolveDifficulty(song, difficulty);
 
         this.start();
 
@@ -423,6 +497,7 @@ class Game {
     selectSong(song) {
 
         this.selectedSong = song;
+        this.selectedDifficulty = this.songMenu.resolveDifficulty(song);
         this.updatePlaySelectionUI();
 
     }
@@ -458,7 +533,15 @@ class Game {
 
         if (this.arenaMode && arenaManager.isGameMaster) {
             // signale aux autres joueurs que la partie demarre
-            await arenaManager.startRoom(this.selectedSong.id);
+            const { error } = await arenaManager.startRoom(
+                this.selectedSong.id,
+                this.selectedDifficulty
+            );
+
+            if (error) {
+                alert(error);
+                return;
+            }
         }
 
         this.mode = "play";
@@ -468,8 +551,12 @@ class Game {
         // masque les notes des leur creation, avant meme la fin du chargement de l'audio
         this.playfield.classList.add("countdown-active");
 
-        const chartPath =
-            encodeURI(this.selectedSong.folder + "/" + this.selectedSong.chart);
+        const chartPath = this.getSelectedChartPath();
+
+        if (!chartPath) {
+            alert("Aucune partition disponible pour cette difficulte.");
+            return;
+        }
 
         const musicPath =
             encodeURI(this.selectedSong.folder + "/" + this.selectedSong.music);
@@ -672,8 +759,11 @@ class Game {
 
         renderer.hideEndScreen();
 
-        const chartPath =
-            encodeURI(this.selectedSong.folder + "/" + this.selectedSong.chart);
+        const chartPath = this.getSelectedChartPath();
+
+        if (!chartPath) {
+            return;
+        }
 
         const musicPath =
             this.selectedSong.folder + "/" + this.selectedSong.music;

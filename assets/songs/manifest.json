@@ -2,23 +2,32 @@
     {
         "id": "saisis-ton-sciforma",
         "default": true,
+        "defaultDifficulty": "normal",
         "title": "Saisis ton Sciforma",
         "folder": "assets/songs/saisis-ton-sciforma",
         "music": "music.mp3",
-        "chart": "chart.json"
+        "charts": {
+            "normal": "charts/normal.json"
+        }
     },
     {
         "id": "horloge-tourne",
+        "defaultDifficulty": "normal",
         "title": "L'Horloge Tourne",
         "folder": "assets/songs/horloge-tourne",
         "music": "music.mp3",
-        "chart": "chart.json"
+        "charts": {
+            "normal": "charts/normal.json"
+        }
     },
     {
         "id": "greatest-show",
+        "defaultDifficulty": "normal",
         "title": "The Greatest Showman",
         "folder": "assets/songs/greatest-show",
         "music": "music.mp3",
-        "chart": "chart.json"
+        "charts": {
+            "normal": "charts/normal.json"
+        }
     }
 ]

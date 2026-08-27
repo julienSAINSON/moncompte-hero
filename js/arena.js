@@ -133,7 +133,7 @@ class ArenaManager {
     /**
      * Reserve au maitre du jeu : passe la salle en "playing" avec la musique choisie.
      */
-    async startRoom(songId) {
+    async startRoom(songId, difficulty = "normal") {
 
         if (!this.isAvailable()) {
             return { error: "Supabase indisponible (pas de connexion ?)" };
@@ -144,6 +144,7 @@ class ArenaManager {
             .update({
                 status: "playing",
                 song_id: songId,
+                difficulty,
                 started_at: new Date().toISOString()
             })
             .eq("id", this.roomId);
@@ -160,7 +161,7 @@ class ArenaManager {
 
         const { data, error } = await this.client
             .from("battle_rooms")
-            .select("status, song_id, started_at")
+            .select("status, song_id, difficulty, started_at")
             .eq("id", this.roomId)
             .maybeSingle();
 

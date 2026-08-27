@@ -40,10 +40,14 @@ create policy "Anyone can insert their own score"
 create table if not exists public.battle_rooms (
     id text primary key,
     song_id text,
+    difficulty text not null default 'normal',
     status text not null default 'waiting', -- waiting | playing | finished
     started_at timestamptz,
     created_at timestamptz not null default now()
 );
+
+alter table public.battle_rooms
+    add column if not exists difficulty text not null default 'normal';
 
 create table if not exists public.battle_live_scores (
     room_id text not null references public.battle_rooms(id) on delete cascade,

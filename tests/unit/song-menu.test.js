@@ -115,6 +115,29 @@ test("SongMenu resout la chanson marquee default", async function () {
     clearSongMenuFixture();
 });
 
+test("SongMenu resout une partition selon la difficulte choisie", function () {
+    const menu = new SongMenu({
+        overlay: document.createElement("div"),
+        listEl: document.createElement("ul"),
+        infoEl: document.createElement("p"),
+        onSelect: function () {}
+    });
+    const song = {
+        defaultDifficulty: "normal",
+        charts: {
+            easy: "charts/easy.json",
+            normal: "charts/normal.json",
+            hard: "charts/hard.json"
+        }
+    };
+
+    const chart = menu.resolveChart(song, "hard");
+
+    assert.equal(chart.difficulty, "hard");
+    assert.equal(chart.path, "charts/hard.json");
+    assert.equal(menu.resolveDifficulty(song, "unknown"), "normal");
+});
+
 test("SongMenu open rend la liste et marque la chanson active", async function () {
     clearSongMenuFixture();
     const fixture = createSongMenuFixture();
