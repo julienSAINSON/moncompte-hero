@@ -646,8 +646,14 @@ class Game {
         top.forEach((entry, index) => {
 
             const item = document.createElement("li");
+            const playerName = document.createElement("strong");
+            const score = document.createElement("span");
 
-            item.textContent = entry.player_name + " - " + entry.score;
+            playerName.className = "arenaPlayerName";
+            playerName.textContent = entry.player_name;
+            score.className = "arenaPlayerScore";
+            score.textContent = entry.score;
+            item.append(playerName, score);
 
             if (entry.player_name === arenaManager.playerName) {
                 item.classList.add("arenaOwnEntry");
@@ -664,9 +670,19 @@ class Game {
 
             currentRank = await arenaManager.getPlayerRank(scoreManager.score);
 
-            ownRankEl.textContent = currentRank
-                ? "#" + currentRank + " " + arenaManager.playerName + " - " + scoreManager.score
-                : "";
+            if (currentRank) {
+                const rank = document.createElement("span");
+                const playerName = document.createElement("strong");
+                const score = document.createElement("span");
+
+                rank.className = "arenaOwnPosition";
+                rank.textContent = "#" + currentRank;
+                playerName.className = "arenaPlayerName";
+                playerName.textContent = arenaManager.playerName;
+                score.className = "arenaPlayerScore";
+                score.textContent = scoreManager.score;
+                ownRankEl.replaceChildren(rank, playerName, score);
+            }
             ownRankEl.classList.add("arenaOwnEntry");
             targetEl = ownRankEl;
 
@@ -695,6 +711,8 @@ class Game {
             void screenFlash.offsetWidth; // force le redemarrage de l'animation
             screenFlash.classList.add(flashClass);
 
+            this.showArenaRankOverlay(currentRank, flashClass);
+
             setTimeout(() => {
                 screenFlash.classList.remove("arenaRankUp", "arenaRankDown");
             }, 1000);
@@ -702,6 +720,26 @@ class Game {
         }
 
         this.arenaPrevRank = currentRank;
+
+    }
+
+    showArenaRankOverlay(rank, flashClass) {
+
+        const overlay = document.getElementById("arenaRankOverlay");
+
+        if (!overlay) {
+            return;
+        }
+
+        overlay.textContent = "#" + rank;
+        overlay.classList.remove("show", "arenaRankUp", "arenaRankDown");
+        overlay.classList.add(flashClass);
+        void overlay.offsetWidth;
+        overlay.classList.add("show");
+
+        setTimeout(() => {
+            overlay.classList.remove("show", "arenaRankUp", "arenaRankDown");
+        }, 1200);
 
     }
 

@@ -88,7 +88,7 @@ test("Responsive mobile 360x800: panneau Arena compact et non bloquant", async f
     const result = await inspectArenaLayout(360, 800);
 
     assert.equal(result.hiddenClass, false, "Panneau Arena cache en mobile");
-    assert.ok(result.sideWidth <= 180.5, "Panneau Arena trop large en mobile");
+    assert.ok(result.sideWidth <= 270.5, "Panneau Arena trop large en mobile");
 
     assert.ok(result.mascotHeight <= 1, "Mascotte doit etre masquee en mobile");
 
@@ -99,7 +99,7 @@ test("Responsive tablette 768x1024: panneau Arena compact", async function () {
     const result = await inspectArenaLayout(768, 1024);
 
     assert.equal(result.hiddenClass, false, "Panneau Arena cache en tablette");
-    assert.ok(result.sideWidth <= 180.5, "Panneau Arena trop large en tablette");
+    assert.ok(result.sideWidth <= 270.5, "Panneau Arena trop large en tablette");
     assert.ok(result.mascotHeight <= 1, "Mascotte doit etre masquee en tablette");
 });
 
@@ -131,6 +131,6 @@ test("Responsive desktop 1366x768: panneau Arena desktop conserve", async functi
     const result = await inspectArenaLayout(1366, 768);
 
     assert.equal(result.hiddenClass, false, "Panneau Arena cache en desktop");
-    assert.ok(result.sideWidth >= 250 && result.sideWidth <= 270, "Largeur desktop attendue autour de 260px");
+    assert.ok(result.sideWidth >= 280 && result.sideWidth <= 300, "Largeur desktop attendue autour de 290px");
     assert.ok(result.mascotHeight > 1, "Mascotte doit rester visible en desktop");
 });

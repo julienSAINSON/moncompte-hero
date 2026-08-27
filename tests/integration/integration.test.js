@@ -161,9 +161,11 @@ test("Integration mode 3 joueur: menu et start caches", async function () {
 
         const menuButton = doc.getElementById("menuButton");
         const playButton = doc.getElementById("playButton");
+        const rankOverlay = doc.getElementById("arenaRankOverlay");
 
         assert.ok(isHidden(menuButton), "menuButton doit etre cache pour un joueur arena");
         assert.ok(isHidden(playButton), "playButton doit etre cache pour un joueur arena");
+        assert.ok(rankOverlay, "Indicateur de rang Arena absent de la piste");
     } finally {
         cleanupGameFrame(frame);
     }
