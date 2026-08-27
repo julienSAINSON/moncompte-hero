@@ -36,6 +36,25 @@ function cleanupGameFrame(frame) {
     }
 }
 
+test("Integration sans mode: ouvre la creation Arena", async function () {
+    const frame = await loadGameFrame(
+        "../index.html?default-arena-test=1",
+        1366,
+        768
+    );
+
+    try {
+        const doc = frame.contentDocument;
+
+        assert.ok(
+            !isHidden(doc.getElementById("arenaCreateScreen")),
+            "La creation Arena doit etre affichee sans parametre mode"
+        );
+    } finally {
+        cleanupGameFrame(frame);
+    }
+});
+
 test("Integration mode 0: etat UI initial coherent", async function () {
     const frame = await loadGameFrame("../index.html?mode=0", 1366, 768);
 

@@ -37,7 +37,9 @@ class ArenaManager {
         }
 
         const url = new URL(window.location.href);
+        url.searchParams.set("mode", "3");
         url.searchParams.set("room", code);
+        url.searchParams.set("gm", "1");
 
         window.location.href = url.toString();
 

@@ -163,19 +163,19 @@ class Game {
 
         // Le mode edition n'est visible que via le parametre d'URL ?mode=1
         const urlParams = new URLSearchParams(window.location.search);
-        this.developerMode = urlParams.get("mode") === "1";
+        const requestedMode = urlParams.get("mode") || "3";
+        this.developerMode = requestedMode === "1";
 
         // Le mode bataille (2 joueurs) se lance via le parametre d'URL ?mode=2
-        this.battleMode = urlParams.get("mode") === "2";
+        this.battleMode = requestedMode === "2";
 
         document.getElementById("battleBonusControls")
             .classList.toggle("hidden", !this.battleMode);
 
-        // Le mode Battle Arena (salle multijoueur en ligne) se lance via ?mode=3&room=XXX
-        this.arenaMode =
-            urlParams.get("mode") === "3" && arenaManager.isActive();
+        // L'Arena est le mode par defaut; une URL sans salle ouvre sa creation.
+        this.arenaMode = requestedMode === "3";
 
-        if (this.arenaMode) {
+        if (this.arenaMode && arenaManager.isActive()) {
             this.arenaRoomLabel.textContent = "Salle : " + arenaManager.roomId;
             this.arenaJoinScreen.classList.remove("hidden");
 
@@ -187,8 +187,8 @@ class Game {
                 this.setupArenaShareSection();
             }
 
-        } else if (urlParams.get("mode") === "3" && arenaManager.isGameMaster) {
-            // le maitre du jeu n'a pas encore de salle : on lui propose d'en creer une
+        } else if (this.arenaMode) {
+            // sans salle, le visiteur devient le createur de la prochaine Arena
             this.arenaCreateScreen.classList.remove("hidden");
         }
 
