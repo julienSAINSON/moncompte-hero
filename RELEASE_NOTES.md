@@ -19,7 +19,7 @@
 
 - Bouton **"Musiques"** (popin plein écran par-dessus la piste) permettant de choisir une chanson dans une liste, disponible uniquement en **mode bataille**.
 - Arborescence dédiée : `assets/songs/<nom-du-morceau>/music.mp3` + `chart.json`, indexée par `assets/songs/manifest.json`.
-- En mode 0/1, la musique par défaut (`assets/default/`) reste chargée automatiquement, sans passer par le menu.
+- En mode 0/1, la chanson portant `"default": true` dans `assets/songs/manifest.json` est chargée automatiquement, sans passer par le menu.
 
 ## ↗️ Notes en diagonale (hold notes obliques)
 
@@ -52,6 +52,6 @@
 
 - Notes qui apparaissaient brièvement en haut de l'écran avant le compte à rebours : corrigé (masquage dès la création des notes, avant même la fin du chargement audio).
 - Gestion du cache du Service Worker fiabilisée (versionnement systématique pour éviter de servir du code JS obsolète pendant le développement).
-- Repli automatique sur les données embarquées (`partition.js`) si le chargement réseau de la partition par défaut échoue (utile en `file://` sans serveur).
+- La chanson par défaut est résolue depuis le manifest, ce qui évite de dupliquer son MP3 et sa partition dans un dossier distinct.
 - Script `serve.ps1` (PowerShell pur, sans dépendance) pour lancer un serveur HTTP local de test sans accès à npm/Node/Python.
 - Corrections tactiles : `touch-action: none`, `overscroll-behavior-x: none`, écouteurs `{ passive: false }` pour empêcher les gestes navigateur (retour arrière, défilement) d'interrompre le jeu ou l'enregistrement de notes.

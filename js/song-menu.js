@@ -62,6 +62,18 @@ class SongMenu {
 
     }
 
+    async resolveDefaultSong() {
+
+        const loaded = await this.ensureSongsLoaded();
+
+        if (!loaded) {
+            return null;
+        }
+
+        return this.songs.find((song) => song.default === true) || null;
+
+    }
+
     async open(currentSongId = null) {
 
         const loaded = await this.ensureSongsLoaded();

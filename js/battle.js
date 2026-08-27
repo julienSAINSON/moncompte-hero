@@ -825,7 +825,7 @@ class BattleGame {
             const response = await fetch(path, { cache: "no-store" });
 
             if (!response.ok) {
-                return this.loadFallbackChart();
+                return false;
             }
 
             const json = await response.json();
@@ -841,26 +841,9 @@ class BattleGame {
         } catch (error) {
 
             console.error(error);
-            return this.loadFallbackChart();
-
-        }
-
-    }
-
-    loadFallbackChart() {
-
-        // Secours si fetch() echoue (ex: page ouverte en file://)
-        if (!window.DEFAULT_PLAY_CHART_DATA) {
             return false;
+
         }
-
-        chart.loadFromJSON(window.DEFAULT_PLAY_CHART_DATA);
-        this.chartNotes = chart.getNotes();
-
-        this.top.spawnNotes(this.chartNotes);
-        this.bottom.spawnNotes(this.chartNotes);
-
-        return true;
 
     }
 

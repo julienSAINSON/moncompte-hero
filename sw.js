@@ -1,4 +1,4 @@
-const CACHE_NAME = "moncompte-hero-v65";
+const CACHE_NAME = "moncompte-hero-v66";
 const APP_SHELL = [
     "./",
     "index.html",
@@ -15,9 +15,9 @@ const APP_SHELL = [
     "js/song-menu.js",
     "js/recording.js",
     "js/game.js",
-    "assets/default/partition.json",
-    "assets/default/partition.js",
-    "assets/default/saisis%20ton%20sciforma.mp3"
+    "assets/songs/manifest.json",
+    "assets/songs/saisis-ton-sciforma/chart.json",
+    "assets/songs/saisis-ton-sciforma/music.mp3"
 ];
 
 self.addEventListener("install", (event) => {
@@ -46,11 +46,6 @@ self.addEventListener("fetch", (event) => {
     const url = new URL(event.request.url);
 
     if (url.origin !== self.location.origin) {
-        return;
-    }
-
-    if (url.pathname.endsWith("/assets/default/partition.json")) {
-        event.respondWith(networkFirst(event.request));
         return;
     }
 

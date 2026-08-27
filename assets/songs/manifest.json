@@ -1,6 +1,7 @@
 [
     {
         "id": "saisis-ton-sciforma",
+        "default": true,
         "title": "Saisis ton Sciforma",
         "folder": "assets/songs/saisis-ton-sciforma",
         "music": "music.mp3",

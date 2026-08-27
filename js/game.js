@@ -2,8 +2,6 @@
 // game.js - Partie 1
 //====================================================
 
-const DEFAULT_PLAY_MP3 = "assets/default/saisis ton sciforma.mp3";
-const DEFAULT_PLAY_CHART = "assets/default/partition.json";
 const MAX_CONSECUTIVE_MISSES = 5;
 
 class Game {
@@ -213,19 +211,10 @@ class Game {
             this.playButton.textContent = "Start (Arena)";
             document.getElementById("shareScoreButton")
                 .classList.add("hidden");
-        } else {
-            // en mode 0/1, la selection via le menu "Musiques" est reservee au mode bataille :
-            // on charge directement la musique par defaut, comme avant l'ajout du menu.
-            this.selectedSong = {
-                id: "default",
-                title: "Musique par defaut",
-                folder: "assets/default",
-                music: "saisis ton sciforma.mp3",
-                chart: "partition.json"
-            };
         }
 
         this.setAppMode("play");
+        this.loadDefaultSong();
 
     }
 
@@ -259,6 +248,24 @@ class Game {
         this.updatePlaySelectionUI();
 
         this.restart();
+
+    }
+
+    async loadDefaultSong() {
+
+        if (this.battleMode || this.arenaMode || this.selectedSong) {
+            return;
+        }
+
+        const song = await this.songMenu.resolveDefaultSong();
+
+        if (!song) {
+            console.warn("Aucune chanson par defaut dans le manifest.");
+            return;
+        }
+
+        this.selectedSong = song;
+        this.updatePlaySelectionUI();
 
     }
 
@@ -441,6 +448,10 @@ class Game {
             return;
         }
 
+        if (!this.selectedSong && !this.battleMode && !this.arenaMode) {
+            await this.loadDefaultSong();
+        }
+
         if (!this.selectedSong) {
             return;
         }
@@ -465,11 +476,6 @@ class Game {
 
         let chartLoaded =
             await this.prepareChartFromURL(chartPath);
-
-        if (!chartLoaded) {
-            // Secours si fetch() echoue (ex: page ouverte en file://)
-            chartLoaded = this.loadDefaultChartData();
-        }
 
         if (!chartLoaded) {
             alert(
@@ -785,20 +791,6 @@ class Game {
     //--------------------------------------------------
     // Génération des notes
     //--------------------------------------------------
-
-    loadDefaultChartData() {
-
-        if (!window.DEFAULT_PLAY_CHART_DATA) {
-            return false;
-        }
-
-        this.loadChartNotes(
-            window.DEFAULT_PLAY_CHART_DATA
-        );
-
-        return true;
-
-    }
 
     async prepareChartFromURL(path) {
 

@@ -93,6 +93,28 @@ test("SongMenu charge un manifest au format objet songs", async function () {
     clearSongMenuFixture();
 });
 
+test("SongMenu resout la chanson marquee default", async function () {
+    clearSongMenuFixture();
+    const fixture = createSongMenuFixture();
+
+    const menu = new SongMenu({
+        overlay: fixture.overlay,
+        listEl: fixture.listEl,
+        infoEl: fixture.infoEl,
+        onSelect: function () {}
+    });
+
+    menu.songs = [
+        { id: "other", title: "Autre chanson" },
+        { id: "default-song", title: "Defaut", default: true }
+    ];
+
+    const song = await menu.resolveDefaultSong();
+
+    assert.equal(song.id, "default-song");
+    clearSongMenuFixture();
+});
+
 test("SongMenu open rend la liste et marque la chanson active", async function () {
     clearSongMenuFixture();
     const fixture = createSongMenuFixture();
