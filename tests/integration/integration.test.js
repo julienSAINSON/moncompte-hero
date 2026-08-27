@@ -73,6 +73,37 @@ test("Integration mode 0: etat UI initial coherent", async function () {
     }
 });
 
+test("Integration mode 1: menu visible, edition reservee au GM", async function () {
+    const frame = await loadGameFrame("../index.html?mode=1", 1366, 768);
+
+    try {
+        const doc = frame.contentDocument;
+
+        assert.ok(!isHidden(doc.getElementById("menuButton")));
+        assert.ok(
+            doc.getElementById("modeSelector")
+                .classList.contains("developerHidden")
+        );
+        assert.ok(isHidden(doc.getElementById("editionControls")));
+    } finally {
+        cleanupGameFrame(frame);
+    }
+});
+
+test("Integration mode 1 GM: bouton Edition visible", async function () {
+    const frame = await loadGameFrame("../index.html?mode=1&gm=1", 1366, 768);
+
+    try {
+        const doc = frame.contentDocument;
+
+        assert.ok(!isHidden(doc.getElementById("menuButton")));
+        assert.ok(!isHidden(doc.getElementById("modeSelector")));
+        assert.ok(isHidden(doc.getElementById("editionControls")));
+    } finally {
+        cleanupGameFrame(frame);
+    }
+});
+
 test("Integration mode 2: start declenche startBattle avec la chanson selectionnee", async function () {
     const frame = await loadGameFrame("../index.html?mode=2", 1366, 768);
 

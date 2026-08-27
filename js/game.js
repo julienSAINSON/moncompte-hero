@@ -175,6 +175,7 @@ class Game {
         const urlParams = new URLSearchParams(window.location.search);
         const requestedMode = urlParams.get("mode") || "3";
         this.developerMode = requestedMode === "1";
+        this.canEditCharts = this.developerMode && urlParams.get("gm") === "1";
 
         // Le mode bataille (2 joueurs) se lance via le parametre d'URL ?mode=2
         this.battleMode = requestedMode === "2";
@@ -204,12 +205,12 @@ class Game {
 
         this.modeSelector.classList.toggle(
             "developerHidden",
-            !this.developerMode
+            !this.canEditCharts
         );
 
         this.modeInfo.classList.toggle(
             "developerHidden",
-            !this.developerMode
+            !this.canEditCharts
         );
 
         if (this.battleMode) {
@@ -295,7 +296,12 @@ class Game {
             return;
         }
 
-        if (!this.battleMode && !this.arenaMode && this.appMode !== "play") {
+        if (
+            !this.battleMode &&
+            !this.arenaMode &&
+            this.appMode !== "play" &&
+            !this.canEditCharts
+        ) {
             this.menuButton.classList.add("hidden");
             this.playButton.classList.add("hidden");
             this.selectedSongInfo.classList.add("hidden");
@@ -304,7 +310,7 @@ class Game {
         }
 
         const hasSong = !!this.selectedSong;
-        const showsMenu = this.battleMode || this.arenaMode;
+        const showsMenu = this.battleMode || this.arenaMode || this.developerMode;
 
         // le bouton "Musiques" n'est propose qu'en mode bataille/arena
         this.menuButton.classList.toggle("hidden", !showsMenu);
