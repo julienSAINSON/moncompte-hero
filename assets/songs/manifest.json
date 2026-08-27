@@ -40,5 +40,15 @@
             "easy": "charts/easy.json",
             "normal": "charts/normal.json"
         }
+    },
+    {
+        "id": "mon-compte-rentre",
+        "defaultDifficulty": "normal",
+        "title": "Mon Compte est de retour",
+        "folder": "assets/songs/mon-compte-rentre",
+        "music": "music.mp3",
+        "charts": {
+            "normal": "charts/normal.json"
+        }
     }
 ]
