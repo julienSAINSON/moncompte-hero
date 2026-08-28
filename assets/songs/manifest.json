@@ -50,5 +50,15 @@
         "charts": {
             "normal": "charts/normal.json"
         }
+    },
+    {
+        "id": "hello",
+        "defaultDifficulty": "easy",
+        "title": "Hello",
+        "folder": "assets/songs/hello",
+        "music": "music.mp3",
+        "charts": {
+            "easy": "charts/easy.json"
+        }
     }
 ]
