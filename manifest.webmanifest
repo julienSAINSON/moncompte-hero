@@ -3,7 +3,7 @@
     "short_name": "MonCompteHero",
     "description": "Jeu de rythme a quatre touches.",
     "lang": "fr",
-    "start_url": "./",
+    "start_url": "./?mode=2",
     "scope": "./",
     "display": "standalone",
     "background_color": "#111111",
