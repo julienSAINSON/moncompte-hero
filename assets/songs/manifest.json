@@ -60,5 +60,15 @@
         "charts": {
             "easy": "charts/easy.json"
         }
+    },
+    {
+        "id": "pokemon",
+        "defaultDifficulty": "normal",
+        "title": "Pokemon",
+        "folder": "assets/songs/pokemon",
+        "music": "music.mp3",
+        "charts": {
+            "normal": "charts/normal.json"
+        }
     }
 ]
