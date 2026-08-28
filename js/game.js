@@ -446,7 +446,9 @@ class Game {
 
         this.arenaJoinScreen.classList.add("hidden");
 
-        if (!arenaManager.isGameMaster) {
+        if (arenaManager.isGameMaster) {
+            this.startArenaLobbyLeaderboard();
+        } else {
             document.getElementById("arenaWaitingScreen")
                 .classList.remove("hidden");
             this.pollArenaRoomStart();
@@ -603,6 +605,7 @@ class Game {
         this.preRollDuration = this.getPreRollDuration();
         this.running = true;
 
+        this.stopArenaLobbyLeaderboard();
         this.startArenaScorePush();
 
         this.startCountdown(() => this.startPreRoll());
@@ -637,12 +640,47 @@ class Game {
 
     }
 
+    startArenaLobbyLeaderboard() {
+
+        if (!this.arenaMode || !arenaManager.isGameMaster) {
+            return;
+        }
+
+        this.stopArenaLobbyLeaderboard();
+        this.refreshArenaLeaderboard();
+        this.arenaLobbyLeaderboardTimer = setInterval(
+            () => this.refreshArenaLeaderboard(),
+            3000
+        );
+
+    }
+
+    stopArenaLobbyLeaderboard() {
+
+        if (this.arenaLobbyLeaderboardTimer) {
+            clearInterval(this.arenaLobbyLeaderboardTimer);
+            this.arenaLobbyLeaderboardTimer = null;
+        }
+
+    }
+
     async refreshArenaLeaderboard() {
 
-        const top = await arenaManager.fetchLeaderboard(10);
+        const [top, playerCount] = await Promise.all([
+            arenaManager.fetchLeaderboard(10),
+            arenaManager.isGameMaster && !this.running
+                ? arenaManager.fetchPlayerCount()
+                : Promise.resolve(null)
+        ]);
 
         const listEl = document.getElementById("arenaLeaderboardList");
         const ownRankEl = document.getElementById("arenaOwnRank");
+        const playerCountEl = document.getElementById("arenaPlayerCount");
+
+        playerCountEl.textContent = playerCount === null
+            ? ""
+            : "(" + playerCount + " joueur" +
+                (playerCount > 1 ? "s" : "") + ")";
 
         listEl.innerHTML = "";
         ownRankEl.textContent = "";
@@ -792,6 +830,8 @@ class Game {
             clearInterval(this.arenaLeaderboardTimer);
             this.arenaLeaderboardTimer = null;
         }
+
+        this.stopArenaLobbyLeaderboard();
 
     }
 

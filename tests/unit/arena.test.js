@@ -109,3 +109,22 @@ test("Arena getPlayerRank renvoie count+1", async function () {
 
     assert.equal(rank, 4);
 });
+
+test("Arena fetchPlayerCount renvoie le nombre de joueurs de la salle", async function () {
+    const manager = createArenaManagerForTest();
+    manager.isAvailable = function () { return true; };
+    manager.client = {
+        from: function () {
+            return {
+                select: function () { return this; },
+                eq: async function () {
+                    return { count: 7, error: null };
+                }
+            };
+        }
+    };
+
+    const count = await manager.fetchPlayerCount();
+
+    assert.equal(count, 7);
+});

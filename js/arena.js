@@ -219,6 +219,26 @@ class ArenaManager {
 
     }
 
+    async fetchPlayerCount() {
+
+        if (!this.isAvailable()) {
+            return 0;
+        }
+
+        const { count, error } = await this.client
+            .from("battle_live_scores")
+            .select("player_name", { count: "exact", head: true })
+            .eq("room_id", this.roomId);
+
+        if (error) {
+            console.error(error);
+            return 0;
+        }
+
+        return count || 0;
+
+    }
+
     /**
      * Rang du joueur (1 = premier), base sur le nombre de joueurs ayant un meilleur score.
      */
