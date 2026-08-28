@@ -34,6 +34,9 @@ class Game {
         this.arenaCreateScreen =
             document.getElementById("arenaCreateScreen");
 
+        this.arenaRoomRequiredScreen =
+            document.getElementById("arenaRoomRequiredScreen");
+
         this.arenaCreateButton =
             document.getElementById("arenaCreateButton");
 
@@ -183,7 +186,7 @@ class Game {
         document.getElementById("battleBonusControls")
             .classList.toggle("hidden", !this.battleMode);
 
-        // L'Arena est le mode par defaut; une URL sans salle ouvre sa creation.
+        // L'Arena est le mode par defaut.
         this.arenaMode = requestedMode === "3";
 
         if (this.arenaMode && arenaManager.isActive()) {
@@ -198,9 +201,10 @@ class Game {
                 this.setupArenaShareSection();
             }
 
-        } else if (this.arenaMode) {
-            // sans salle, le visiteur devient le createur de la prochaine Arena
+        } else if (this.arenaMode && arenaManager.isGameMaster) {
             this.arenaCreateScreen.classList.remove("hidden");
+        } else if (this.arenaMode) {
+            this.arenaRoomRequiredScreen.classList.remove("hidden");
         }
 
         this.modeSelector.classList.toggle(

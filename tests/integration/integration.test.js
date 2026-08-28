@@ -36,7 +36,7 @@ function cleanupGameFrame(frame) {
     }
 }
 
-test("Integration sans mode: ouvre la creation Arena", async function () {
+test("Integration sans mode: requiert une URL de salle Arena", async function () {
     const frame = await loadGameFrame(
         "../index.html?default-arena-test=1",
         1366,
@@ -47,9 +47,23 @@ test("Integration sans mode: ouvre la creation Arena", async function () {
         const doc = frame.contentDocument;
 
         assert.ok(
-            !isHidden(doc.getElementById("arenaCreateScreen")),
-            "La creation Arena doit etre affichee sans parametre mode"
+            !isHidden(doc.getElementById("arenaRoomRequiredScreen")),
+            "Une URL Arena sans salle doit afficher les instructions de jonction"
         );
+        assert.ok(isHidden(doc.getElementById("arenaCreateScreen")));
+    } finally {
+        cleanupGameFrame(frame);
+    }
+});
+
+test("Integration Arena GM sans salle: autorise la creation", async function () {
+    const frame = await loadGameFrame("../index.html?gm=1", 1366, 768);
+
+    try {
+        const doc = frame.contentDocument;
+
+        assert.ok(!isHidden(doc.getElementById("arenaCreateScreen")));
+        assert.ok(isHidden(doc.getElementById("arenaRoomRequiredScreen")));
     } finally {
         cleanupGameFrame(frame);
     }

@@ -301,7 +301,8 @@ body {
     font-size: 26px;
 }
 
-#arenaCreateScreen {
+#arenaCreateScreen,
+#arenaRoomRequiredScreen {
 
     position: fixed;
     inset: 0;
@@ -321,7 +322,8 @@ body {
 
 }
 
-#arenaCreateScreen h2 {
+#arenaCreateScreen h2,
+#arenaRoomRequiredScreen h2 {
     font-size: 26px;
 }
 
