@@ -196,6 +196,16 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+    v_live_score public.battle_live_scores%rowtype;
+    v_room public.battle_rooms%rowtype;
+    v_elapsed_seconds numeric;
+    v_max_score_delta integer;
+    v_max_combo_delta integer;
+    v_max_score_per_second constant integer := 3000;
+    v_score_margin constant integer := 600;
+    v_max_combo_per_second constant integer := 10;
+    v_combo_margin constant integer := 3;
 begin
     if auth.uid() is null then
         return query select 'Authentification requise.'::text;
@@ -209,21 +219,50 @@ begin
         return;
     end if;
 
-    update public.battle_live_scores as live_score
-    set score = greatest(live_score.score, p_score),
-        combo = p_combo,
-        accuracy = p_accuracy,
-        updated_at = now()
-    from public.battle_rooms as room
-    where live_score.room_id = p_room_id
-        and live_score.user_id = auth.uid()
-        and room.id = live_score.room_id
-        and room.status = 'playing';
+    select * into v_live_score
+    from public.battle_live_scores
+    where room_id = p_room_id
+        and user_id = auth.uid()
+    for update;
 
-    if not found then
+    select * into v_room
+    from public.battle_rooms
+    where id = p_room_id;
+
+    if not found or v_room.status <> 'playing' then
         return query select 'Inscription Arena invalide ou partie non lancee.'::text;
         return;
     end if;
+
+    if v_live_score.room_id is null then
+        return query select 'Inscription Arena invalide ou partie non lancee.'::text;
+        return;
+    end if;
+
+    v_elapsed_seconds := greatest(
+        0,
+        extract(epoch from now() - greatest(v_live_score.updated_at, v_room.started_at))
+    );
+    v_max_score_delta := floor(
+        v_score_margin + v_max_score_per_second * v_elapsed_seconds
+    );
+    v_max_combo_delta := floor(
+        v_combo_margin + v_max_combo_per_second * v_elapsed_seconds
+    );
+
+    if p_score - v_live_score.score > v_max_score_delta
+        or p_combo - v_live_score.combo > v_max_combo_delta then
+        return query select 'Mise a jour refusee.'::text;
+        return;
+    end if;
+
+    update public.battle_live_scores as live_score
+    set score = p_score,
+        combo = p_combo,
+        accuracy = p_accuracy,
+        updated_at = now()
+    where live_score.room_id = p_room_id
+        and live_score.user_id = auth.uid();
 
     return query select null::text;
 end;

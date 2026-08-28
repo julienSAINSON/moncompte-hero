@@ -30,6 +30,8 @@ test("Contrat SQL: grants Supabase essentiels presents", async function () {
     assert.ok(/grant execute on function public\.submit_solo_score\(text, text, integer, numeric, integer\) to authenticated/i.test(sql), "GRANT RPC solo manquant");
     assert.ok(/grant execute on function public\.create_battle_room\(text\) to authenticated/i.test(sql), "GRANT RPC creation Arena manquant");
     assert.ok(/grant execute on function public\.update_battle_score\(text, integer, integer, numeric\) to authenticated/i.test(sql), "GRANT RPC score Arena manquant");
+    assert.ok(/v_max_score_per_second constant integer := 3000/i.test(sql), "Limite de progression Arena manquante");
+    assert.ok(/Mise a jour refusee/i.test(sql), "Rejet de progression Arena manquant");
 });
 
 test("Contrat SW: app shell contient les modules critiques", async function () {
