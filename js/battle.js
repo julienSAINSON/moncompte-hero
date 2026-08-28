@@ -30,7 +30,6 @@ class BattlePlayer {
 
         this.root = rootEl;
         this.notes = [];
-        this.trapNotes = [];
 
         this.balance = 0;
         this.bonusBalanceModifier = 0;
@@ -102,6 +101,7 @@ class BattlePlayer {
                 judged: false,
                 hit: false,
                 holding: false,
+                isBonus: false,
                 element: null
             });
 
@@ -117,6 +117,10 @@ class BattlePlayer {
 
         const element = document.createElement("div");
         element.className = "note lane" + note.lane;
+
+        if (note.isBonus) {
+            element.classList.add("battleBonusNote");
+        }
 
         if (this.isHoldNote(note)) {
             element.classList.add(
@@ -146,16 +150,23 @@ class BattlePlayer {
 
     }
 
-    addTrapNote(currentTime) {
+    markBonusNote(currentTime) {
 
-        const lane = Math.floor(Math.random() * 4);
-        const hitTime = currentTime + BATTLE_TRAP_LEAD_TIME;
-        const element = document.createElement("div");
+        const earliestHitTime = currentTime + BATTLE_TRAP_LEAD_TIME;
+        const note = this.notes.find((candidate) =>
+            !candidate.judged &&
+            !candidate.isBonus &&
+            !this.isHoldNote(candidate) &&
+            candidate.hitTime >= earliestHitTime
+        );
 
-        element.className = "note battleTrapNote lane" + lane;
-        this.root.appendChild(element);
+        if (!note) {
+            return false;
+        }
 
-        this.trapNotes.push({ lane, hitTime, element });
+        note.isBonus = true;
+        note.element?.classList.add("battleBonusNote");
+        return true;
 
     }
 
@@ -248,21 +259,6 @@ class BattlePlayer {
 
         }
 
-        for (let index = this.trapNotes.length - 1; index >= 0; index--) {
-
-            const trap = this.trapNotes[index];
-            const y = this.hitLineY -
-                ((trap.hitTime - currentTime) * this.pixelsPerSecond);
-
-            trap.element.style.transform = "translateY(" + y + "px)";
-
-            if (currentTime > trap.hitTime + BATTLE_HIT_WINDOW) {
-                trap.element.remove();
-                this.trapNotes.splice(index, 1);
-            }
-
-        }
-
     }
 
     updateDiagonal(note, y, holdHeight) {
@@ -333,18 +329,6 @@ class BattlePlayer {
 
     press(lane, currentTime) {
 
-        const trapIndex = this.trapNotes.findIndex((trap) =>
-            trap.lane === lane &&
-            Math.abs(trap.hitTime - currentTime) <= BATTLE_HIT_WINDOW
-        );
-
-        if (trapIndex !== -1) {
-            const [trap] = this.trapNotes.splice(trapIndex, 1);
-            trap.element.remove();
-            this.onTrapHit?.();
-            return;
-        }
-
         let bestNote = null;
         let bestDelta = Infinity;
 
@@ -368,6 +352,14 @@ class BattlePlayer {
         }
 
         if (bestDelta > this.getStartWindow(bestNote)) {
+            return;
+        }
+
+        if (bestNote.isBonus) {
+            bestNote.hit = true;
+            bestNote.judged = true;
+            bestNote.element?.remove();
+            this.onTrapHit?.();
             return;
         }
 
@@ -496,8 +488,6 @@ class BattlePlayer {
     reset() {
 
         this.clearNotes();
-        this.trapNotes.forEach((trap) => trap.element.remove());
-        this.trapNotes = [];
         this.visibilityModifierUntil = 0;
         this.visibilityModifierSeconds = 0;
         this.root.classList.remove("battleVisibilityBonus", "battleVisibilityPenalty");
@@ -1011,7 +1001,9 @@ class BattleGame {
         );
 
         if (disadvantaged) {
-            disadvantaged.addTrapNote(currentTime);
+            if (!disadvantaged.markBonusNote(currentTime)) {
+                return;
+            }
             this.lastTrapAt = now;
         }
 
@@ -1068,8 +1060,10 @@ class BattleGame {
         }
 
         [this.top, this.bottom].forEach((player) => {
-            player.trapNotes.forEach((trap) => trap.element.remove());
-            player.trapNotes = [];
+            player.notes.forEach((note) => {
+                note.isBonus = false;
+                note.element?.classList.remove("battleBonusNote");
+            });
             player.visibilityModifierUntil = 0;
             player.visibilityModifierSeconds = 0;
             player.bonusBalanceModifier = 0;

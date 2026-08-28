@@ -76,13 +76,14 @@ test("Battle note brillante donne un bonus de visibilite au joueur en difficulte
     opponent.balance = 20;
     battleGame.updateDivider();
     const dividerBeforeBonus = parseFloat(battleGame.divider.style.top);
-    player.addTrapNote(1);
+    player.spawnNotes([{ lane: 2, hitTime: 2.2, holdDuration: 0 }]);
+    player.markBonusNote(1);
 
-    const trap = player.trapNotes[0];
+    const bonusNote = player.notes[0];
     const initialLeadTime = player.getVisibleLeadTime(1);
     const initialOpponentLeadTime = opponent.getVisibleLeadTime(1);
 
-    player.press(trap.lane, trap.hitTime);
+    player.press(bonusNote.lane, bonusNote.hitTime);
 
     assert.ok(player.getVisibleLeadTime(1) > initialLeadTime);
     assert.ok(opponent.getVisibleLeadTime(1) < initialOpponentLeadTime);
@@ -93,7 +94,9 @@ test("Battle note brillante donne un bonus de visibilite au joueur en difficulte
     assert.equal(player.balance, 0);
     assert.equal(player.bonusBalanceModifier, 15);
     assert.equal(opponent.bonusBalanceModifier, -15);
-    assert.equal(player.trapNotes.length, 0);
+    assert.equal(player.notes.length, 1);
+    assert.equal(player.notes[0].isBonus, true);
+    assert.equal(player.notes[0].judged, true);
     player.reset();
     opponent.reset();
 });
@@ -126,10 +129,12 @@ test("Battle cree le bonus immediatement a l'atteinte du seuil", function () {
     ) + "px";
     battleGame.lastTrapAt = null;
     battleGame.bonusBalanceUntil = 0;
+    battleGame.top.spawnNotes([{ lane: 0, hitTime: 2.2, holdDuration: 0 }]);
 
     battleGame.maybeAddTrapNote(1);
 
-    assert.equal(battleGame.top.trapNotes.length, 1);
+    assert.equal(battleGame.top.notes.length, 1);
+    assert.equal(battleGame.top.notes[0].isBonus, true);
     battleGame.top.root.style.flexBasis = "";
     battleGame.top.reset();
 });
@@ -141,10 +146,11 @@ test("Battle bloque tout nouveau bonus pendant un effet actif", function () {
     battleGame.top.root.style.flexBasis = "190px";
     battleGame.lastTrapAt = null;
     battleGame.bonusBalanceUntil = performance.now() + 1000;
+    battleGame.top.spawnNotes([{ lane: 0, hitTime: 2.2, holdDuration: 0 }]);
 
     battleGame.maybeAddTrapNote(1);
 
-    assert.equal(battleGame.top.trapNotes.length, 0);
+    assert.equal(battleGame.top.notes[0].isBonus, false);
     battleGame.top.root.style.flexBasis = "";
     battleGame.bonusBalanceUntil = 0;
     battleGame.top.reset();
@@ -152,14 +158,15 @@ test("Battle bloque tout nouveau bonus pendant un effet actif", function () {
 
 test("Battle desactive retire les notes et effets bonus en cours", function () {
     const player = battleGame.bottom;
-    player.addTrapNote(1);
+    player.spawnNotes([{ lane: 0, hitTime: 2.2, holdDuration: 0 }]);
+    player.markBonusNote(1);
     player.applyVisibilityModifier(1, "battleVisibilityBonus");
     player.bonusBalanceModifier = 15;
     battleGame.bonusBalanceUntil = performance.now() + 1000;
 
     battleGame.setBonusEnabled(false);
 
-    assert.equal(player.trapNotes.length, 0);
+    assert.equal(player.notes[0].isBonus, false);
     assert.equal(player.visibilityModifierSeconds, 0);
     assert.equal(player.bonusBalanceModifier, 0);
     assert.equal(battleGame.bonusEnabled, false);
