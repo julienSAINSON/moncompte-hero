@@ -18,6 +18,7 @@ test("Arena joinRoom detecte pseudo deja pris", async function () {
     const manager = createArenaManagerForTest();
 
     manager.isAvailable = function () { return true; };
+    manager.ensureAuthenticated = async function () { return true; };
     manager.client = {
         rpc: async function () {
             return { data: [{ error_message: "Ce pseudo est deja pris dans cette salle." }], error: null };
@@ -33,6 +34,7 @@ test("Arena joinRoom reussit et enregistre playerName", async function () {
     const manager = createArenaManagerForTest();
 
     manager.isAvailable = function () { return true; };
+    manager.ensureAuthenticated = async function () { return true; };
     let rpcCalled = false;
 
     manager.client = {
@@ -54,6 +56,7 @@ test("Arena joinRoom reussit et enregistre playerName", async function () {
 test("Arena joinRoom refuse une salle deja lancee", async function () {
     const manager = createArenaManagerForTest();
     manager.isAvailable = function () { return true; };
+    manager.ensureAuthenticated = async function () { return true; };
     manager.client = {
         rpc: async function () {
             return { data: [{ error_message: "La partie est deja commencee." }], error: null };
@@ -65,30 +68,24 @@ test("Arena joinRoom refuse une salle deja lancee", async function () {
     assert.equal(result.error, "La partie est deja commencee.");
 });
 
-test("Arena startRoom enregistre la difficulte choisie", async function () {
+test("Arena startRoom appelle la RPC securisee avec la difficulte choisie", async function () {
     const manager = createArenaManagerForTest();
     manager.isAvailable = function () { return true; };
-    let updateData = null;
-    const query = {
-        update: function (data) {
-            updateData = data;
-            return this;
-        },
-        eq: async function () {
-            return { error: null };
-        }
-    };
+    manager.ensureAuthenticated = async function () { return true; };
+    let rpcCall = null;
     manager.client = {
-        from: function () {
-            return query;
+        rpc: async function (name, args) {
+            rpcCall = { name, args };
+            return { data: [{ error_message: null }], error: null };
         }
     };
 
     const result = await manager.startRoom("song-a", "hard");
 
     assert.equal(result.error, null);
-    assert.equal(updateData.song_id, "song-a");
-    assert.equal(updateData.difficulty, "hard");
+    assert.equal(rpcCall.name, "start_battle_room");
+    assert.equal(rpcCall.args.p_song_id, "song-a");
+    assert.equal(rpcCall.args.p_difficulty, "hard");
 });
 
 test("Arena getPlayerRank renvoie count+1", async function () {

@@ -42,7 +42,12 @@ class Game {
 
         this.arenaCreateButton.addEventListener(
             "click",
-            () => arenaManager.createAndEnterRoom()
+            async () => {
+                const { error } = await arenaManager.createAndEnterRoom();
+                if (error) {
+                    alert(error);
+                }
+            }
         );
 
         this.arenaJoinScreen =

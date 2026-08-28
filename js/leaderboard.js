@@ -11,6 +11,7 @@ class LeaderboardManager {
     constructor() {
 
         this.client = null;
+        this.authReady = null;
 
         if (window.supabase && typeof window.supabase.createClient === "function") {
             this.client = window.supabase.createClient(
@@ -30,23 +31,70 @@ class LeaderboardManager {
 
     }
 
+    async startAnonymousSession() {
+
+        if (!this.client?.auth) {
+            return false;
+        }
+
+        const { data: sessionData, error: sessionError } =
+            await this.client.auth.getSession();
+
+        if (sessionError) {
+            console.error(sessionError);
+            return false;
+        }
+
+        if (sessionData.session?.user) {
+            return true;
+        }
+
+        const { data, error } = await this.client.auth.signInAnonymously();
+
+        if (error) {
+            console.error(error);
+            return false;
+        }
+
+        return !!data.user;
+
+    }
+
+    async ensureAuthenticated() {
+
+        if (!this.client) {
+            return false;
+        }
+
+        if (!this.authReady) {
+            this.authReady = this.startAnonymousSession();
+        }
+
+        return this.authReady;
+
+    }
+
     async submitScore(songId, playerName, score, accuracy, bestCombo) {
 
         if (!this.client) {
             return { error: "Supabase indisponible (pas de connexion ?)" };
         }
 
-        const { error } = await this.client
-            .from("scores")
-            .insert({
-                song_id: songId,
-                player_name: playerName.slice(0, 24),
-                score,
-                accuracy,
-                best_combo: bestCombo
-            });
+        if (!await this.ensureAuthenticated()) {
+            return { error: "Authentification du classement indisponible." };
+        }
 
-        return { error: error ? error.message : null };
+        const { data, error } = await this.client.rpc("submit_solo_score", {
+            p_song_id: songId,
+            p_player_name: playerName.slice(0, 24),
+            p_score: score,
+            p_accuracy: accuracy,
+            p_best_combo: bestCombo
+        });
+
+        return {
+            error: error ? error.message : (data?.[0]?.error_message || null)
+        };
 
     }
 

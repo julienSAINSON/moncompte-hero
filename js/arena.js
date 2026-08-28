@@ -27,7 +27,11 @@ class ArenaManager {
     /**
      * Genere un code de salle et recharge la page avec ?room=CODE ajoute a l'URL.
      */
-    createAndEnterRoom() {
+    async createAndEnterRoom() {
+
+        if (!await this.ensureAuthenticated()) {
+            return { error: "Authentification Arena indisponible." };
+        }
 
         const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans caracteres ambigus
         let code = "";
@@ -36,12 +40,30 @@ class ArenaManager {
             code += chars[Math.floor(Math.random() * chars.length)];
         }
 
+        const { data, error } = await this.client.rpc("create_battle_room", {
+            p_room_id: code
+        });
+
+        const createError = error ? error.message : data?.[0]?.error_message;
+
+        if (createError) {
+            return { error: createError };
+        }
+
         const url = new URL(window.location.href);
         url.searchParams.set("mode", "3");
         url.searchParams.set("room", code);
         url.searchParams.set("gm", "1");
 
         window.location.href = url.toString();
+
+        return { error: null };
+
+    }
+
+    async ensureAuthenticated() {
+
+        return !!await window.leaderboardManager?.ensureAuthenticated?.();
 
     }
 
@@ -66,6 +88,10 @@ class ArenaManager {
 
         if (!name) {
             return { error: "Entre un pseudo." };
+        }
+
+        if (!await this.ensureAuthenticated()) {
+            return { error: "Authentification Arena indisponible." };
         }
 
         if (typeof this.client.rpc !== "function") {
@@ -100,36 +126,6 @@ class ArenaManager {
 
     }
 
-    async getOrCreateRoom() {
-
-        const existing = await this.client
-            .from("battle_rooms")
-            .select("id, status, song_id, started_at, created_at")
-            .eq("id", this.roomId)
-            .maybeSingle();
-
-        if (existing.error) {
-            return { error: existing.error.message };
-        }
-
-        if (existing.data) {
-            return { data: existing.data };
-        }
-
-        const created = await this.client
-            .from("battle_rooms")
-            .insert({ id: this.roomId })
-            .select("id, status, song_id, started_at, created_at")
-            .single();
-
-        if (created.error) {
-            return { error: created.error.message };
-        }
-
-        return { data: created.data };
-
-    }
-
     /**
      * Reserve au maitre du jeu : passe la salle en "playing" avec la musique choisie.
      */
@@ -139,17 +135,19 @@ class ArenaManager {
             return { error: "Supabase indisponible (pas de connexion ?)" };
         }
 
-        const { error } = await this.client
-            .from("battle_rooms")
-            .update({
-                status: "playing",
-                song_id: songId,
-                difficulty,
-                started_at: new Date().toISOString()
-            })
-            .eq("id", this.roomId);
+        if (!await this.ensureAuthenticated()) {
+            return { error: "Authentification Arena indisponible." };
+        }
 
-        return { error: error ? error.message : null };
+        const { data, error } = await this.client.rpc("start_battle_room", {
+            p_room_id: this.roomId,
+            p_song_id: songId,
+            p_difficulty: difficulty
+        });
+
+        return {
+            error: error ? error.message : (data?.[0]?.error_message || null)
+        };
 
     }
 
@@ -182,16 +180,20 @@ class ArenaManager {
             return;
         }
 
-        await this.client
-            .from("battle_live_scores")
-            .update({
-                score,
-                combo,
-                accuracy,
-                updated_at: new Date().toISOString()
-            })
-            .eq("room_id", this.roomId)
-            .eq("player_name", this.playerName);
+        if (!await this.ensureAuthenticated()) {
+            return;
+        }
+
+        const { data, error } = await this.client.rpc("update_battle_score", {
+            p_room_id: this.roomId,
+            p_score: score,
+            p_combo: combo,
+            p_accuracy: accuracy
+        });
+
+        if (error || data?.[0]?.error_message) {
+            console.error(error?.message || data[0].error_message);
+        }
 
     }
 

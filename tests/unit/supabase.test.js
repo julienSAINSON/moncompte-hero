@@ -1,16 +1,13 @@
 test("Leaderboard submitScore tronque le pseudo et retourne null en succes", async function () {
     const manager = new LeaderboardManager();
 
-    let payload = null;
+    manager.ensureAuthenticated = async function () { return true; };
+    let rpcCall = null;
 
     manager.client = {
-        from: function () {
-            return {
-                insert: async function (obj) {
-                    payload = obj;
-                    return { error: null };
-                }
-            };
+        rpc: async function (name, args) {
+            rpcCall = { name, args };
+            return { data: [{ error_message: null }], error: null };
         }
     };
 
@@ -23,11 +20,12 @@ test("Leaderboard submitScore tronque le pseudo et retourne null en succes", asy
     );
 
     assert.equal(result.error, null);
-    assert.equal(payload.song_id, "song-1");
-    assert.equal(payload.player_name.length, 24);
-    assert.equal(payload.score, 12345);
-    assert.equal(payload.accuracy, 98.7);
-    assert.equal(payload.best_combo, 42);
+    assert.equal(rpcCall.name, "submit_solo_score");
+    assert.equal(rpcCall.args.p_song_id, "song-1");
+    assert.equal(rpcCall.args.p_player_name.length, 24);
+    assert.equal(rpcCall.args.p_score, 12345);
+    assert.equal(rpcCall.args.p_accuracy, 98.7);
+    assert.equal(rpcCall.args.p_best_combo, 42);
 });
 
 test("Leaderboard submitScore retourne un message si Supabase indisponible", async function () {
@@ -109,18 +107,11 @@ test("Leaderboard fetchTopScores retourne [] en cas d'erreur", async function ()
 test("Arena startRoom propage un message d'erreur Supabase", async function () {
     const manager = new ArenaManager();
     manager.roomId = "ABCDE";
+    manager.ensureAuthenticated = async function () { return true; };
 
     manager.client = {
-        from: function () {
-            return {
-                update: function () {
-                    return {
-                        eq: async function () {
-                            return { error: { message: "update denied" } };
-                        }
-                    };
-                }
-            };
+        rpc: async function () {
+            return { data: null, error: { message: "update denied" } };
         }
     };
 
