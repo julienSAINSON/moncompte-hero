@@ -31,6 +31,28 @@ class Game {
         this.playButton =
             document.getElementById("playButton");
 
+        this.recoveryQuestionScreen =
+            document.getElementById("recoveryQuestionScreen");
+
+        this.recoveryQuestionPrompt =
+            document.getElementById("recoveryQuestionPrompt");
+
+        this.recoveryQuestionAnswer =
+            document.getElementById("recoveryQuestionAnswer");
+
+        this.recoveryQuestionStatus =
+            document.getElementById("recoveryQuestionStatus");
+
+        this.recoveryQuestionAnswerValue = null;
+
+        document.getElementById("recoveryQuestionForm").addEventListener(
+            "submit",
+            (event) => {
+                event.preventDefault();
+                this.answerRecoveryQuestion();
+            }
+        );
+
         this.arenaCreateScreen =
             document.getElementById("arenaCreateScreen");
 
@@ -884,13 +906,13 @@ class Game {
 
     }
 
-    startCountdown(onComplete) {
+    startCountdown(onComplete, showNotes = false) {
 
         this.clearCountdown();
 
         let remaining = 3;
         this.isCountdownActive = true;
-        this.playfield.classList.add("countdown-active");
+        this.playfield.classList.toggle("countdown-active", !showNotes);
         this.countdownElement.textContent = remaining;
         this.countdownElement.classList.remove("hidden");
 
@@ -1313,17 +1335,43 @@ if (this.mode === "record") {
 
         audioManager.pause();
 
-        this.stopArenaScorePush();
+        this.showRecoveryQuestion();
 
-        renderer.showEndScreen(
-            "Echec de la partie",
-            "Tu as enchaine " + this.maxConsecutiveMisses +
-            " fautes. Recommence et ameliore-toi !"
-        );
+    }
 
-        // le score ne peut etre enregistre que si la musique va au bout
-        document.getElementById("leaderboardSection")
-            .classList.add("hidden");
+    showRecoveryQuestion() {
+
+        const leftOperand = Math.floor(Math.random() * 9) + 1;
+        const rightOperand = Math.floor(Math.random() * 99) + 1;
+
+        this.recoveryQuestionAnswerValue = leftOperand + rightOperand;
+        this.recoveryQuestionPrompt.textContent =
+            leftOperand + " + " + rightOperand + " = ?";
+        this.recoveryQuestionAnswer.value = "";
+        this.recoveryQuestionStatus.textContent = "";
+        this.recoveryQuestionScreen.classList.remove("hidden");
+        this.recoveryQuestionAnswer.focus();
+
+    }
+
+    answerRecoveryQuestion() {
+
+        if (Number(this.recoveryQuestionAnswer.value) !==
+            this.recoveryQuestionAnswerValue) {
+            this.recoveryQuestionStatus.textContent = "Essaie un autre calcul.";
+            this.showRecoveryQuestion();
+            return;
+        }
+
+        this.recoveryQuestionScreen.classList.add("hidden");
+        this.recoveryQuestionAnswerValue = null;
+        scoreManager.consecutiveMisses = 0;
+        this.startCountdown(() => {
+            this.running = true;
+            audioManager.play();
+            this.loop();
+        }, true);
+
 
     }
 

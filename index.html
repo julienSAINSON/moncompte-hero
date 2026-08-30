@@ -306,6 +306,27 @@
     </div>
 
 
+    <div id="recoveryQuestionScreen" class="hidden" role="dialog" aria-modal="true" aria-labelledby="recoveryQuestionPrompt">
+
+        <h2>Pause calcul</h2>
+
+        <p id="recoveryQuestionPrompt"></p>
+
+        <form id="recoveryQuestionForm">
+            <input
+                type="number"
+                id="recoveryQuestionAnswer"
+                inputmode="numeric"
+                autocomplete="off"
+                aria-label="Reponse au calcul">
+            <button type="submit">Reprendre</button>
+        </form>
+
+        <p id="recoveryQuestionStatus" aria-live="polite"></p>
+
+    </div>
+
+
     <!-- =========================
          FIN
     ========================== -->

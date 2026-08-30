@@ -87,6 +87,49 @@ test("Integration mode 0: etat UI initial coherent", async function () {
     }
 });
 
+test("Integration solo: cinq fautes ouvrent un calcul avant reprise", async function () {
+    const frame = await loadGameFrame("../index.html?mode=0", 1366, 768);
+
+    try {
+        const cw = frame.contentWindow;
+        const doc = frame.contentDocument;
+        const screen = doc.getElementById("recoveryQuestionScreen");
+
+        cw.game.showRecoveryQuestion();
+
+        assert.ok(!isHidden(screen), "Le calcul doit etre affiche");
+        assert.ok(/\d{1,2} \+ \d{1,2} = \?/.test(
+            doc.getElementById("recoveryQuestionPrompt").textContent
+        ));
+
+        const originalRandom = cw.Math.random;
+        cw.Math.random = () => 0.999;
+        cw.game.showRecoveryQuestion();
+        cw.Math.random = originalRandom;
+
+        assert.equal(
+            doc.getElementById("recoveryQuestionPrompt").textContent,
+            "99 + 99 = ?"
+        );
+
+        let resume = null;
+        let showNotes = false;
+        cw.game.startCountdown = function (onComplete, shouldShowNotes) {
+            resume = onComplete;
+            showNotes = shouldShowNotes;
+        };
+        cw.game.recoveryQuestionAnswer.value = String(
+            cw.game.recoveryQuestionAnswerValue
+        );
+        cw.game.answerRecoveryQuestion();
+
+        assert.ok(!!resume, "La reprise doit attendre le compte a rebours");
+        assert.equal(showNotes, true, "Les notes doivent rester visibles a la reprise");
+    } finally {
+        cleanupGameFrame(frame);
+    }
+});
+
 test("Integration mode 1: menu visible, edition reservee au GM", async function () {
     const frame = await loadGameFrame("../index.html?mode=1", 1366, 768);
 
