@@ -42,7 +42,7 @@ test("Arena joinRoom reussit et enregistre playerName", async function () {
             rpcCalled = name === "join_battle_room" &&
                 args.p_room_id === "ABCDE" &&
                 args.p_player_name === "Player One";
-            return { data: [{ error_message: null }], error: null };
+            return { data: [{ error_message: null, avatar_id: 4 }], error: null };
         }
     };
 
@@ -51,6 +51,28 @@ test("Arena joinRoom reussit et enregistre playerName", async function () {
     assert.equal(result.error, null);
     assert.equal(rpcCalled, true);
     assert.equal(manager.playerName, "Player One");
+    assert.equal(manager.playerAvatarId, 4);
+});
+
+test("Arena fetchLeaderboard demande les avatars des joueurs", async function () {
+    const manager = createArenaManagerForTest();
+    manager.isAvailable = function () { return true; };
+    let selectedColumns = null;
+
+    manager.client = {
+        from: function () {
+            return {
+                select: function (columns) { selectedColumns = columns; return this; },
+                eq: function () { return this; },
+                order: function () { return this; },
+                limit: async function () { return { data: [], error: null }; }
+            };
+        }
+    };
+
+    await manager.fetchLeaderboard();
+
+    assert.equal(selectedColumns, "player_name, score, avatar_id");
 });
 
 test("Arena joinRoom refuse une salle deja lancee", async function () {

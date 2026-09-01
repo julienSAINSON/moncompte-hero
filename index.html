@@ -78,6 +78,8 @@
 
         <h2>⏳ En attente du maitre du jeu...</h2>
 
+        <img id="arenaWaitingAvatar" class="arenaAvatar hidden" alt="Ton avatar Arena">
+
         <p>La partie demarrera automatiquement des que la musique sera lancee.</p>
 
     </div>
@@ -171,9 +173,6 @@
 
     </div>
 
-    <div id="arenaRankFlash"></div>
-
-
     <!-- =========================
          HUD
     ========================== -->
@@ -206,12 +205,13 @@
 
     </div>
 
-
     <!-- =========================
          JEU
     ========================== -->
 
     <div id="game">
+
+        <aside id="arenaRaceTrack" class="hidden" aria-label="Progression des joueurs"></aside>
 
         <div id="playfield">
 
@@ -369,7 +369,7 @@
 
             <h3>🏟️ Classement final de la salle</h3>
 
-            <ol id="arenaFinalRankingList"></ol>
+            <div id="arenaFinalRankingList" class="arenaPodium"></div>
 
         </div>
 

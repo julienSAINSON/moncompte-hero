@@ -13,6 +13,7 @@ class ArenaManager {
         this.roomId = params.get("room");
         this.isGameMaster = params.get("gm") === "1";
         this.playerName = null;
+        this.playerAvatarId = null;
 
         this.client = window.supabaseClient || null;
 
@@ -121,8 +122,9 @@ class ArenaManager {
         }
 
         this.playerName = name;
+        this.playerAvatarId = result.avatar_id;
 
-        return { error: null };
+        return { error: null, avatarId: result.avatar_id };
 
     }
 
@@ -205,7 +207,7 @@ class ArenaManager {
 
         const { data, error } = await this.client
             .from("battle_live_scores")
-            .select("player_name, score")
+            .select("player_name, score, avatar_id")
             .eq("room_id", this.roomId)
             .order("score", { ascending: false })
             .limit(limit);

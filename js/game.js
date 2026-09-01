@@ -220,11 +220,9 @@ class Game {
             this.arenaRoomLabel.textContent = "Salle : " + arenaManager.roomId;
             this.arenaJoinScreen.classList.remove("hidden");
 
-            // le panneau (image + classement) reste visible tout au long du mode Arena
-            document.getElementById("arenaSidePanel")
-                .classList.remove("hidden");
-
             if (arenaManager.isGameMaster) {
+                document.getElementById("arenaSidePanel")
+                    .classList.remove("hidden");
                 this.setupArenaShareSection();
             }
 
@@ -469,12 +467,36 @@ class Game {
         this.arenaJoinScreen.classList.add("hidden");
 
         if (arenaManager.isGameMaster) {
+            document.getElementById("arenaSidePanel")
+                .classList.remove("hidden");
             this.startArenaLobbyLeaderboard();
         } else {
+            this.showArenaWaitingAvatar();
             document.getElementById("arenaWaitingScreen")
                 .classList.remove("hidden");
             this.pollArenaRoomStart();
         }
+
+    }
+
+    showArenaWaitingAvatar() {
+
+        const avatar = document.getElementById("arenaWaitingAvatar");
+        const avatarId = arenaManager.playerAvatarId;
+
+        if (!Number.isInteger(avatarId) || avatarId < 1 || avatarId > 5) {
+            avatar.classList.add("hidden");
+            return;
+        }
+
+        avatar.src = this.getArenaAvatarPath(avatarId);
+        avatar.classList.remove("hidden");
+
+    }
+
+    getArenaAvatarPath(avatarId) {
+
+        return "assets/avatars/" + avatarId + ".png";
 
     }
 
@@ -630,6 +652,13 @@ class Game {
         this.stopArenaLobbyLeaderboard();
         this.startArenaScorePush();
 
+        if (this.arenaMode) {
+            document.getElementById("arenaSidePanel")
+                .classList.add("hidden");
+            document.getElementById("arenaRaceTrack")
+                .classList.remove("hidden");
+        }
+
         this.startCountdown(() => this.startPreRoll());
         this.loop();
 
@@ -690,7 +719,7 @@ class Game {
 
         const [top, playerCount] = await Promise.all([
             arenaManager.fetchLeaderboard(10),
-            arenaManager.isGameMaster && !this.running
+            arenaManager.isGameMaster
                 ? arenaManager.fetchPlayerCount()
                 : Promise.resolve(null)
         ]);
@@ -715,14 +744,18 @@ class Game {
         top.forEach((entry, index) => {
 
             const item = document.createElement("li");
+            const avatar = document.createElement("img");
             const playerName = document.createElement("strong");
             const score = document.createElement("span");
 
+            avatar.className = "arenaAvatar arenaLeaderboardAvatar";
+            avatar.src = this.getArenaAvatarPath(entry.avatar_id);
+            avatar.alt = "";
             playerName.className = "arenaPlayerName";
             playerName.textContent = entry.player_name;
             score.className = "arenaPlayerScore";
             score.textContent = entry.score;
-            item.append(playerName, score);
+            item.append(avatar, playerName, score);
 
             if (entry.player_name === arenaManager.playerName) {
                 item.classList.add("arenaOwnEntry");
@@ -757,42 +790,77 @@ class Game {
 
         }
 
-        if (
-            targetEl &&
-            currentRank !== null &&
-            this.arenaPrevRank !== null &&
-            currentRank !== this.arenaPrevRank
-        ) {
-
-            const improved = currentRank < this.arenaPrevRank;
-            const flashClass = improved ? "arenaRankUp" : "arenaRankDown";
-
-            targetEl.classList.remove("arenaRankUp", "arenaRankDown");
-            void targetEl.offsetWidth; // force le redemarrage de l'animation
-            targetEl.classList.add(flashClass);
-
-            setTimeout(() => {
-                targetEl.classList.remove("arenaRankUp", "arenaRankDown");
-            }, 1000);
-
-            const screenFlash = document.getElementById("arenaRankFlash");
-            screenFlash.classList.remove("arenaRankUp", "arenaRankDown");
-            void screenFlash.offsetWidth; // force le redemarrage de l'animation
-            screenFlash.classList.add(flashClass);
-
-            this.showArenaRankOverlay(currentRank, flashClass);
-
-            setTimeout(() => {
-                screenFlash.classList.remove("arenaRankUp", "arenaRankDown");
-            }, 1000);
-
+        if (currentRank !== null) {
+            this.showArenaRankOverlay(currentRank);
         }
 
         this.arenaPrevRank = currentRank;
 
+        this.renderArenaRaceTrack(top);
+
     }
 
-    showArenaRankOverlay(rank, flashClass) {
+    renderArenaRaceTrack(entries) {
+
+        const track = document.getElementById("arenaRaceTrack");
+
+        if (!this.arenaMode || !this.running || !track) {
+            return;
+        }
+
+        if (!entries.length) {
+            track.replaceChildren();
+            return;
+        }
+
+        const scores = entries.map((entry) => Number(entry.score) || 0);
+        const highestScore = Math.max(...scores);
+        const lowestScore = Math.min(...scores);
+        const scoreRange = highestScore - lowestScore;
+        const activePlayers = new Set();
+
+        entries.forEach((entry, index) => {
+            const playerName = entry.player_name;
+            let racer = track.querySelector(
+                ".arenaRacer[data-player-name=" + JSON.stringify(playerName) + "]"
+            );
+            let avatar;
+            const fallbackPosition = entries.length === 1
+                ? 50
+                : 6 + (index / (entries.length - 1)) * 88;
+            const scorePosition = scoreRange === 0
+                ? fallbackPosition
+                : 6 + ((highestScore - Number(entry.score)) / scoreRange) * 88;
+
+            activePlayers.add(playerName);
+
+            if (!racer) {
+                racer = document.createElement("div");
+                avatar = document.createElement("img");
+                racer.dataset.playerName = playerName;
+                avatar.className = "arenaAvatar";
+                racer.append(avatar);
+                track.appendChild(racer);
+            } else {
+                avatar = racer.querySelector(".arenaAvatar");
+            }
+
+            racer.className = "arenaRacer" +
+                (playerName === arenaManager.playerName ? " arenaOwnRacer" : "");
+            racer.style.top = scorePosition + "%";
+            avatar.src = this.getArenaAvatarPath(entry.avatar_id);
+            avatar.alt = playerName;
+        });
+
+        track.querySelectorAll(".arenaRacer").forEach((racer) => {
+            if (!activePlayers.has(racer.dataset.playerName)) {
+                racer.remove();
+            }
+        });
+
+    }
+
+    showArenaRankOverlay(rank) {
 
         const overlay = document.getElementById("arenaRankOverlay");
 
@@ -801,14 +869,8 @@ class Game {
         }
 
         overlay.textContent = "#" + rank;
-        overlay.classList.remove("show", "arenaRankUp", "arenaRankDown");
-        overlay.classList.add(flashClass);
-        void overlay.offsetWidth;
+    overlay.style.visibility = "visible";
         overlay.classList.add("show");
-
-        setTimeout(() => {
-            overlay.classList.remove("show", "arenaRankUp", "arenaRankDown");
-        }, 1200);
 
     }
 
@@ -818,23 +880,28 @@ class Game {
         const listEl = document.getElementById("arenaFinalRankingList");
 
         section.classList.remove("hidden");
-        listEl.innerHTML = "<li>Chargement...</li>";
+        listEl.textContent = "Chargement...";
 
         const scores = await arenaManager.fetchLeaderboard(50);
 
-        listEl.innerHTML = "";
+        listEl.replaceChildren();
 
-        scores.forEach((entry) => {
+        scores.slice(0, 3).forEach((entry, index) => {
 
-            const item = document.createElement("li");
+            const place = index + 1;
+            const item = document.createElement("div");
+            const avatar = document.createElement("img");
+            const name = document.createElement("strong");
+            const score = document.createElement("span");
 
-            item.textContent = entry.player_name + " - " + entry.score;
-
-            if (entry.player_name === arenaManager.playerName) {
-                item.style.color = "#00ff88";
-                item.style.fontWeight = "bold";
-            }
-
+            item.className = "arenaPodiumPlace place" + place +
+                (entry.player_name === arenaManager.playerName ? " arenaOwnPodium" : "");
+            avatar.className = "arenaAvatar";
+            avatar.src = this.getArenaAvatarPath(entry.avatar_id);
+            avatar.alt = "";
+            name.textContent = entry.player_name;
+            score.textContent = entry.score + " pts";
+            item.append(avatar, name, score);
             listEl.appendChild(item);
 
         });
@@ -1316,6 +1383,8 @@ if (this.mode === "record") {
         }
 
         this.stopArenaScorePush();
+
+        document.getElementById("arenaRaceTrack").classList.add("hidden");
 
             this.recorder.updateControls();
 

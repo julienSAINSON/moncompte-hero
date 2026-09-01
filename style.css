@@ -188,35 +188,19 @@
 #arenaRankOverlay {
     position: absolute;
     inset: 0;
-    z-index: 12;
+    z-index: 1;
     display: grid;
     place-items: center;
-    opacity: 0;
+    visibility: hidden;
     pointer-events: none;
     font-size: 128px;
     font-weight: bold;
-    color: #ffffff;
-    text-shadow: 0 0 24px currentColor;
+    color: rgba(255, 255, 255, .16);
+    text-shadow: 0 0 24px rgba(255, 255, 255, .16);
 }
 
-#arenaRankOverlay.show.arenaRankUp {
-    animation: arenaRankOverlayUp 1.2s ease-out;
-}
-
-#arenaRankOverlay.show.arenaRankDown {
-    animation: arenaRankOverlayDown 1.2s ease-out;
-}
-
-@keyframes arenaRankOverlayUp {
-    0% { opacity: 0; color: #00ff88; transform: scale(0.72); }
-    20% { opacity: 0.58; }
-    100% { opacity: 0; color: #00ff88; transform: scale(1.18); }
-}
-
-@keyframes arenaRankOverlayDown {
-    0% { opacity: 0; color: #ff5555; transform: scale(1.18); }
-    20% { opacity: 0.58; }
-    100% { opacity: 0; color: #ff5555; transform: scale(0.72); }
+#arenaRankOverlay.show {
+    visibility: visible;
 }
 
 * {
@@ -715,55 +699,6 @@ body {
 
 }
 
-#arenaRankFlash {
-
-    position: fixed;
-    inset: 0;
-
-    z-index: 50;
-
-    opacity: 0;
-
-    pointer-events: none;
-
-}
-
-#arenaRankFlash.arenaRankUp {
-    animation: arenaFullFlashGreen 1s ease;
-}
-
-#arenaRankFlash.arenaRankDown {
-    animation: arenaFullFlashRed 1s ease;
-}
-
-@keyframes arenaFullFlashGreen {
-
-    0% {
-        opacity: 1;
-        background: rgba(0, 255, 136, .35);
-    }
-
-    100% {
-        opacity: 0;
-        background: rgba(0, 255, 136, .35);
-    }
-
-}
-
-@keyframes arenaFullFlashRed {
-
-    0% {
-        opacity: 1;
-        background: rgba(255, 68, 68, .35);
-    }
-
-    100% {
-        opacity: 0;
-        background: rgba(255, 68, 68, .35);
-    }
-
-}
-
 /* ==========================
    JEU
 ========================== */
@@ -773,6 +708,7 @@ body {
     justify-content: center;
     flex: 1;
     min-height: 0;
+    position: relative;
 }
 
 #playfield {
@@ -913,6 +849,7 @@ body {
 .note {
 
     position: absolute;
+    z-index: 2;
 
     will-change: transform;
 
@@ -1641,4 +1578,143 @@ body.desktop-device .lane {
 .difficultySelector button:disabled {
     color: #777;
     cursor: not-allowed;
+}
+
+/* ==========================
+   AVATARS ARENA
+========================== */
+
+.arenaAvatar {
+    width: 54px;
+    height: 54px;
+    object-fit: contain;
+}
+
+#arenaWaitingAvatar {
+    width: 132px;
+    height: 132px;
+}
+
+#arenaLeaderboardList li {
+    align-items: center;
+}
+
+.arenaLeaderboardAvatar {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+}
+
+#arenaRaceTrack {
+    position: absolute;
+    top: 0;
+    left: calc(50% - 316px);
+    z-index: 15;
+    width: 96px;
+    height: min(700px, 100%);
+    pointer-events: none;
+}
+
+.arenaRacer {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    transform: translateY(-50%);
+    transition: top .85s cubic-bezier(.22, .61, .36, 1);
+}
+
+.arenaRacer .arenaAvatar {
+    width: 32px;
+    height: 32px;
+}
+
+.arenaOwnRacer .arenaAvatar {
+    width: 84px;
+    height: 84px;
+    filter: drop-shadow(0 0 5px #00ff88);
+    transition: width .25s ease, height .25s ease;
+}
+
+.arenaPodium {
+    min-height: 185px;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    gap: 8px;
+}
+
+.arenaPodiumPlace {
+    width: 88px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: end;
+    gap: 4px;
+    padding: 8px 4px;
+    color: #111;
+    font-size: 12px;
+    text-align: center;
+}
+
+.arenaPodiumPlace .arenaAvatar {
+    width: 58px;
+    height: 58px;
+}
+
+.arenaPodiumPlace strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.arenaPodiumPlace span {
+    font-size: 11px;
+}
+
+.arenaPodiumPlace.place1 {
+    order: 2;
+    min-height: 146px;
+    background: #ffd84d;
+}
+
+.arenaPodiumPlace.place2 {
+    order: 1;
+    min-height: 112px;
+    background: #d5dbe0;
+}
+
+.arenaPodiumPlace.place3 {
+    order: 3;
+    min-height: 82px;
+    background: #d58a52;
+}
+
+.arenaOwnPodium {
+    box-shadow: 0 0 0 3px #00ff88;
+}
+
+@media (max-width: 480px) {
+    #arenaRaceTrack {
+        width: 64px;
+        left: 4px;
+        top: 0;
+        height: 100%;
+    }
+
+    .arenaRacer {
+        left: 0;
+    }
+
+    .arenaRacer .arenaAvatar {
+        width: 25px;
+        height: 25px;
+    }
+
+    .arenaOwnRacer .arenaAvatar {
+        width: 62px;
+        height: 62px;
+    }
 }

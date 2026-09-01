@@ -58,6 +58,7 @@ create table if not exists public.battle_live_scores (
     room_id text not null references public.battle_rooms(id) on delete cascade,
     user_id uuid not null references auth.users(id),
     player_name text not null,
+    avatar_id smallint not null default 1 check (avatar_id between 1 and 5),
     score integer not null default 0,
     combo integer not null default 0,
     accuracy numeric(5,2) not null default 100,
@@ -67,6 +68,19 @@ create table if not exists public.battle_live_scores (
 
 alter table public.battle_live_scores
     add column if not exists user_id uuid references auth.users(id);
+
+alter table public.battle_live_scores
+    add column if not exists avatar_id smallint not null default 1;
+
+alter table public.battle_live_scores
+    drop constraint if exists battle_live_scores_avatar_id_check;
+
+alter table public.battle_live_scores
+    add constraint battle_live_scores_avatar_id_check
+    check (avatar_id between 1 and 5);
+
+create unique index if not exists battle_live_scores_room_avatar_idx
+    on public.battle_live_scores (room_id, avatar_id);
 
 create unique index if not exists battle_live_scores_room_user_idx
     on public.battle_live_scores (room_id, user_id);
@@ -99,20 +113,23 @@ end;
 $$;
 
 -- Inscription atomique: verrouille la salle et interdit les arrivées apres Start.
+drop function if exists public.join_battle_room(text, text);
+
 create or replace function public.join_battle_room(
     p_room_id text,
     p_player_name text
 )
-returns table(error_message text)
+returns table(error_message text, avatar_id smallint)
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
     v_room public.battle_rooms%rowtype;
+    v_avatar_id smallint;
 begin
     if auth.uid() is null then
-        return query select 'Authentification requise.'::text;
+        return query select 'Authentification requise.'::text, null::smallint;
         return;
     end if;
 
@@ -122,32 +139,48 @@ begin
     for update;
 
     if not found then
-        return query select 'Cette salle n''existe pas.'::text;
+        return query select 'Cette salle n''existe pas.'::text, null::smallint;
         return;
     end if;
 
     if v_room.status <> 'waiting' then
-        return query select 'La partie est deja commencee.'::text;
+        return query select 'La partie est deja commencee.'::text, null::smallint;
         return;
     end if;
 
     if v_room.created_at < now() - interval '30 minutes' then
-        return query select 'Cette salle a expire (duree de vie : 30 minutes).'::text;
+        return query select 'Cette salle a expire (duree de vie : 30 minutes).', null::smallint;
+        return;
+    end if;
+
+    select candidate.avatar_id into v_avatar_id
+    from generate_series(1, 5) as candidate(avatar_id)
+    where not exists (
+        select 1
+        from public.battle_live_scores
+        where room_id = p_room_id
+            and battle_live_scores.avatar_id = candidate.avatar_id
+    )
+    order by random()
+    limit 1;
+
+    if v_avatar_id is null then
+        return query select 'La salle est complete (5 joueurs maximum).', null::smallint;
         return;
     end if;
 
     insert into public.battle_live_scores (
-        room_id, user_id, player_name, score, combo, accuracy
+        room_id, user_id, player_name, avatar_id, score, combo, accuracy
     ) values (
-        p_room_id, auth.uid(), p_player_name, 0, 0, 100
+        p_room_id, auth.uid(), p_player_name, v_avatar_id, 0, 0, 100
     ) on conflict (room_id, player_name) do nothing;
 
     if not found then
-        return query select 'Ce pseudo est deja pris dans cette salle.'::text;
+        return query select 'Ce pseudo est deja pris dans cette salle.', null::smallint;
         return;
     end if;
 
-    return query select null::text;
+    return query select null::text, v_avatar_id;
 end;
 $$;
 
